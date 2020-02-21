@@ -17,49 +17,79 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.Signature;
+
 import java.util.Objects;
 
 /**
  * Represents a vote on a vertex
  */
 public final class Vote {
-	private final int hash;
 	private final long round;
+	private final SignedMessage signedMessage;
 
 	/**
-	 * Create a vote for a given round with a certain hash.
+	 * Create a vote for a given round with a {@link SignedMessage} (by replicas) of the hash.
 	 * Note that the hash must reflect the given round.
 	 * This is a temporary method as Vote will be expanded to maintain this invariant itself.
 	 */
-	public Vote(long round, int hash) {
+	public Vote(long round, SignedMessage signedMessage) {
 		this.round = round;
-		this.hash = hash;
+		this.signedMessage = Objects.requireNonNull(signedMessage, "'signedMessage' is required");
+	}
+
+	/**
+	 * Create a vote for a given round with a certain hash and a signature (by a replica) of the hash.
+	 * Note that the hash must reflect the given round.
+	 * This is a temporary method as Vote will be expanded to maintain this invariant itself.
+	 */
+	public Vote(long round, Hash hash, Signature signature, ECPublicKey publicKey) {
+		this(round, new SignedMessage(hash, signature, publicKey));
 	}
 
 	public long getRound() {
 		return round;
 	}
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(round, hash);
+	public SignedMessage signedMessage() {
+		return signedMessage;
+	}
+
+	public ECPublicKey publicKey() {
+		return this.signedMessage.publicKey();
+	}
+
+	public Signature signature() {
+		return this.signedMessage.signature();
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof Vote)) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
+		Vote vote = (Vote) o;
+		return round == vote.round
+				&& signedMessage.equals(vote.signedMessage);
+	}
 
-		Vote v = (Vote) o;
-		return v.hash == this.hash && v.round == this.round;
+	@Override
+	public int hashCode() {
+		return Objects.hash(round, signedMessage);
 	}
 
 	@Override
 	public String toString() {
-		return "Vote{" +
-			"hash=" + hash +
-			", round=" + round +
-			'}';
+		return String.format(
+				"%s{round=%s, signedMessage=%s}",
+				getClass().getSimpleName(),
+				this.round,
+				this.signedMessage
+		);
 	}
 }

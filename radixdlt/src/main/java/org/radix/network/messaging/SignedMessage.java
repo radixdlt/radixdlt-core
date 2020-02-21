@@ -19,7 +19,7 @@ package org.radix.network.messaging;
 
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.ECSignature;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -34,7 +34,7 @@ public abstract class SignedMessage extends Message
 
 	@JsonProperty("signature")
 	@DsonOutput(Output.ALL)
-	private ECSignature signature;
+	private ECDSASignature signature;
 
 	@Override
 	public short VERSION() { return 100; }
@@ -45,12 +45,12 @@ public abstract class SignedMessage extends Message
 	}
 
 	// SIGNABLE //
-	public final ECSignature getSignature()
+	public final ECDSASignature getSignature()
 	{
 		return this.signature;
 	}
 
-	public final void setSignature(ECSignature signature)
+	public final void setSignature(ECDSASignature signature)
 	{
 		this.signature = signature;
 	}

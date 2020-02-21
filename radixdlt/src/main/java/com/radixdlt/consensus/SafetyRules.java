@@ -16,13 +16,35 @@
  */
 
 package com.radixdlt.consensus;
+import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Signature;
+import com.radixdlt.crypto.Signatures;
+
+import java.util.Objects;
 
 /**
  * Manages safety of the protocol.
  * TODO: Add storage of private key of node here
  */
 public final class SafetyRules {
+
+	private final ECKeyPair keyPair;
+
+	public SafetyRules(ECKeyPair keyPair) {
+		this.keyPair = Objects.requireNonNull(keyPair);
+	}
+
 	public Vote vote(Vertex vertex) {
-		return new Vote(vertex.getRound(), vertex.hashCode());
+		if (!this.keyPair.canProduceSignatureOfType(Signatures.defaultEmptySignatures().signatureType())) {
+			throw new IllegalStateException("Cannot produced a signature using the provided signing key.");
+		}
+		try {
+			Signature signature = this.keyPair.sign(vertex.hash());
+			Signatures signatures = vertex.signatures().concatenate(this.keyPair.getPublicKey(), signature);
+			return new Vote(vertex.getRound(), vertex.hash(), signatures);
+		} catch (CryptoException e) {
+			throw new IllegalStateException("Should always be able to sign", e);
+		}
 	}
 }

@@ -18,6 +18,10 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.common.Atom;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.Signatures;
+
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
@@ -47,6 +51,20 @@ public final class Vertex {
 
 	public Atom getAtom() {
 		return atom;
+	}
+
+	public Signatures signatures() {
+		return this.qc.signatures();
+	}
+
+	public Hash hash() {
+		ByteBuffer buffer = ByteBuffer.allocate(32 + 4 + Long.BYTES);
+		buffer.put(atom.getHash().toByteArray());
+		// TODO use `(sha)hash` of `qc` rather than `hashCode`
+		buffer.putInt(qc.hashCode());
+		buffer.putLong(round);
+		buffer.flip();
+		return new Hash(Hash.hash256(buffer.array()));
 	}
 
 	@Override

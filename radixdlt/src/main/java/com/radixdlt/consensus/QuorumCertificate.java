@@ -17,17 +17,48 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.crypto.DefaultSignatures;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.Signatures;
+
 import java.util.Objects;
 
 public final class QuorumCertificate {
 	private final Vote vote;
+	private final Signatures signatures;
+
+	public QuorumCertificate(Vote vote, Signatures signatures) {
+		if (!QuorumCertificate.isVoteSignedByAllSignatures(vote, signatures)) {
+			throw new IllegalArgumentException("Vote should have been signed by all signatures");
+		}
+
+		this.vote = Objects.requireNonNull(vote);
+		this.signatures = Objects.requireNonNull(signatures);
+	}
 
 	public QuorumCertificate(Vote vote) {
-		this.vote = Objects.requireNonNull(vote);
+		this(vote, DefaultSignatures.single(vote.publicKey(), vote.signature()));
 	}
 
 	public long getRound() {
 		return vote.getRound();
+	}
+
+	public Signatures signatures() {
+		return this.signatures();
+	}
+
+	/**
+	 * Aggregates a QC with another vote ({@code otherVote}), which {@code round} must match the round of {@code vote},
+	 * effectively concatenating the the {@code signatures} of this QC with the {@code signature} of the {@code otherVote}.
+	 * @param otherVote Another vote of this round with a signature to concatenate.
+	 * @return a new QC with concatenated signatures for the vote.
+	 */
+	public QuorumCertificate aggregateVote(Vote otherVote) {
+		if (this.vote.getRound() != otherVote.getRound()) {
+			throw new IllegalArgumentException("Cant merge Votes for different rounds");
+		}
+		return new QuorumCertificate(this.vote, this.signatures.concatenate(otherVote.publicKey(), otherVote.signature()));
 	}
 
 	@Override
@@ -43,5 +74,10 @@ public final class QuorumCertificate {
 	@Override
 	public int hashCode() {
 		return vote.hashCode();
+	}
+
+	private static boolean isVoteSignedByAllSignatures(Vote vote, Signatures signatures) {
+		Hash hash = vote.signedMessage().hash();
+		return signatures.hasSignedMessage(hash, signatures.keyToSignatures().size());
 	}
 }
