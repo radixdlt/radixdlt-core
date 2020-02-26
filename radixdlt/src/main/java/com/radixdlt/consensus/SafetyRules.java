@@ -16,12 +16,13 @@
  */
 
 package com.radixdlt.consensus;
-import com.radixdlt.crypto.CryptoException;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Signature;
-import com.radixdlt.crypto.Signatures;
 
 import java.util.Objects;
+
+import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.DefaultSignatures;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Signature;
 
 /**
  * Manages safety of the protocol.
@@ -36,13 +37,12 @@ public final class SafetyRules {
 	}
 
 	public Vote vote(Vertex vertex) {
-		if (!this.keyPair.canProduceSignatureOfType(Signatures.defaultEmptySignatures().signatureType())) {
+		if (!this.keyPair.canProduceSignatureForScheme(DefaultSignatures.emptySignatures().signatureScheme())) {
 			throw new IllegalStateException("Cannot produced a signature using the provided signing key.");
 		}
 		try {
 			Signature signature = this.keyPair.sign(vertex.hash());
-			Signatures signatures = vertex.signatures().concatenate(this.keyPair.getPublicKey(), signature);
-			return new Vote(vertex.getRound(), vertex.hash(), signatures);
+			return new Vote(vertex.getRound(), vertex.hash(), signature, this.keyPair.getPublicKey());
 		} catch (CryptoException e) {
 			throw new IllegalStateException("Should always be able to sign", e);
 		}

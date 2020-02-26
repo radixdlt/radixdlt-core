@@ -78,6 +78,6 @@ public final class QuorumCertificate {
 
 	private static boolean isVoteSignedByAllSignatures(Vote vote, Signatures signatures) {
 		Hash hash = vote.signedMessage().hash();
-		return signatures.hasSignedMessage(hash, signatures.keyToSignatures().size());
+		return signatures.hasSignedMessage(hash, signatures.size());
 	}
 }
