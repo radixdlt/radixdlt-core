@@ -19,6 +19,8 @@ package com.radixdlt.consensus;
 
 import java.util.Objects;
 
+import javax.inject.Inject;
+
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.DefaultSignatures;
 import com.radixdlt.crypto.ECKeyPair;
@@ -32,6 +34,7 @@ public final class SafetyRules {
 
 	private final ECKeyPair keyPair;
 
+	@Inject
 	public SafetyRules(ECKeyPair keyPair) {
 		this.keyPair = Objects.requireNonNull(keyPair);
 	}
