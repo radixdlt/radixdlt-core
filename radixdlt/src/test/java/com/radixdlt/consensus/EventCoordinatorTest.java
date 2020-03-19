@@ -27,11 +27,13 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.VoteResult;
 import com.radixdlt.constraintmachine.DataPointer;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.EventCoordinatorNetworkSender;
 import com.radixdlt.utils.Ints;
+import java.util.Optional;
 import org.junit.Test;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -291,5 +293,47 @@ public class EventCoordinatorTest {
 		eventCoordinator.processProposal(proposedVertex);
 
 		verify(networkSender, times(1)).sendVote(eq(voteMessage));
+	}
+
+	@Test
+	public void when_processing_valid_stored_proposal_and_there_exists_a_new_commit__the_new_commit_atom_is_removed_from_mempool() throws Exception {
+		ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
+		Mempool mempool = mock(Mempool.class);
+		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
+		SafetyRules safetyRules = mock(SafetyRules.class);
+		Pacemaker pacemaker = mock(Pacemaker.class);
+		VertexStore vertexStore = mock(VertexStore.class);
+		ProposerElection proposerElection = mock(ProposerElection.class);
+
+		EventCoordinator eventCoordinator = new EventCoordinator(
+			proposalGenerator,
+			mempool,
+			networkSender,
+			safetyRules,
+			pacemaker,
+			vertexStore,
+			proposerElection,
+			SELF
+		);
+
+		Vertex proposalVertex = mock(Vertex.class);
+		Hash proposalVertexId = mock(Hash.class);
+		when(proposalVertex.getId()).thenReturn(proposalVertexId);
+
+		VoteResult voteResult = mock(VoteResult.class);
+		Hash committedVertexId = mock(Hash.class);
+		when(voteResult.getCommittedVertexId()).thenReturn(Optional.of(committedVertexId));
+
+		Vertex committedVertex = mock(Vertex.class);
+		Atom atom = mock(Atom.class);
+		AID aid = mock(AID.class);
+		when(atom.getAID()).thenReturn(aid);
+		when(committedVertex.getAtom()).thenReturn(atom);
+
+		when(safetyRules.voteFor(eq(proposalVertex))).thenReturn(voteResult);
+		when(vertexStore.commitVertex(eq(committedVertexId))).thenReturn(committedVertex);
+
+		eventCoordinator.processProposal(proposalVertex);
+		verify(mempool, times(1)).removeCommittedAtom(eq(aid));
 	}
 }
