@@ -17,6 +17,7 @@
 
 package org.radix.network2.messaging;
 
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
@@ -74,7 +75,7 @@ public class MessageCentralImplTest {
 
 	@Before
 	public void testSetup() {
-		this.serialization = Serialization.getDefault();
+		this.serialization = DefaultSerialization.getInstance();
 		MessageCentralConfiguration conf = new MessagingDummyConfigurations.DummyMessageCentralConfiguration();
 
 		// Curse you singletons

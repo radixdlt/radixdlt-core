@@ -24,7 +24,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.radix.api.AtomQuery;
 import org.radix.api.services.AtomsService;
-import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 

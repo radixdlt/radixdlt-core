@@ -17,7 +17,7 @@
 
 package org.radix.atoms.messages;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import org.radix.network.messaging.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;

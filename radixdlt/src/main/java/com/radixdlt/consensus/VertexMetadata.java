@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.common.AID;
+import com.radixdlt.identifiers.AID;
 
 public class VertexMetadata {
 	private final Round round;

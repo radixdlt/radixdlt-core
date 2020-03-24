@@ -20,7 +20,7 @@ package org.radix.universe.system;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import org.radix.containers.BasicContainer;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.CryptoException;

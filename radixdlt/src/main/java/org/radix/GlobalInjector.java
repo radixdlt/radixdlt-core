@@ -23,7 +23,8 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.name.Names;
 import com.radixdlt.CerberusModule;
-import com.radixdlt.common.EUID;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.delivery.LazyRequestDelivererModule;
 import com.radixdlt.discovery.IterativeDiscovererModule;
 import com.radixdlt.mempool.MempoolModule;
@@ -67,7 +68,7 @@ public class GlobalInjector {
 			protected void configure() {
 				bind(RuntimeProperties.class).toInstance(properties);
 				bind(DatabaseEnvironment.class).toInstance(dbEnv);
-				bind(Serialization.class).toProvider(Serialization::getDefault);
+				bind(Serialization.class).toProvider(DefaultSerialization::getInstance);
 				bind(Events.class).toProvider(Events::getInstance);
 				bind(LocalSystem.class).toInstance(localSystem);
 				bind(EUID.class).annotatedWith(Names.named("self")).toInstance(localSystem.getNID());

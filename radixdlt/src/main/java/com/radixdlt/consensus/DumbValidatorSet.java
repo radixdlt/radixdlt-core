@@ -29,7 +29,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 
 /**
  * Stub {@link ValidatorSet} implementation.

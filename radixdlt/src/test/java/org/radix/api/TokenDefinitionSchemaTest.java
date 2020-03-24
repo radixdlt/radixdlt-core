@@ -17,12 +17,13 @@
 
 package org.radix.api;
 
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import java.util.Map;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.json.JSONObject;
@@ -30,7 +31,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
@@ -47,7 +48,7 @@ public class TokenDefinitionSchemaTest {
 
 	@BeforeClass
 	public static void setupSerializer() {
-		serialization = Serialization.getDefault();
+		serialization = DefaultSerialization.getInstance();
 	}
 
 	@Test

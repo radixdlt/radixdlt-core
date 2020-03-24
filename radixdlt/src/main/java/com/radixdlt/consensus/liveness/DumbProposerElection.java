@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.Round;
 
 public class DumbProposerElection implements ProposerElection {

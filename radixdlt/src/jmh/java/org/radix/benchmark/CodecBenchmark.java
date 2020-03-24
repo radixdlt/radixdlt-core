@@ -65,7 +65,7 @@ public class CodecBenchmark {
 		try {
 			TestSetupUtils.installBouncyCastleProvider();
 
-			serialization = Serialization.getDefault();
+			serialization = DefaultSerialization.getInstance();
 
 			testObject = new DummyTestObject(true);
 

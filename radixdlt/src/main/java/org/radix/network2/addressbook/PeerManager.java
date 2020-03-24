@@ -19,7 +19,7 @@ package org.radix.network2.addressbook;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.universe.Universe;
 import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;

@@ -28,8 +28,8 @@ import org.radix.properties.RuntimeProperties;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.radixdlt.common.AID;
-import com.radixdlt.common.Atom;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.atommodel.Atom;
 
 /**
  * Local-only mempool.

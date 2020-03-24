@@ -20,7 +20,7 @@ package com.radixdlt.network;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 
 /**
  * Callback for receiving atoms from mempool gossip.

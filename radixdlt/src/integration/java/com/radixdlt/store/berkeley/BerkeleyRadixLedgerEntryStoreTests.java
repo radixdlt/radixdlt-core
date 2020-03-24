@@ -43,7 +43,7 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
     private static final Logger LOGGER = Logging.getLogger("BerkeleyTempoAtomStoreTests");
 
     private LedgerEntryGenerator ledgerEntryGenerator = new LedgerEntryGenerator();
-    private Serialization serialization = Serialization.getDefault();
+    private Serialization serialization = DefaultSerialization.getInstance();
     private BerkeleyLedgerEntryStore tempoAtomStore;
 
     private List<LedgerEntry> ledgerEntries;

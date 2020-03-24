@@ -17,16 +17,16 @@
 
 package org.radix.containers;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -36,10 +36,10 @@ public abstract class BasicContainer
 
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(Output.ALL)
+	@DsonOutput(DsonOutput.Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	private	Hash	hash = Hash.ZERO_HASH;
+	private Hash hash = Hash.ZERO_HASH;
 
 	public BasicContainer()
 	{
@@ -79,7 +79,7 @@ public abstract class BasicContainer
 		try
 		{
 			if (hash == null || hash.equals(Hash.ZERO_HASH)) {
-				byte[] hashBytes = Serialization.getDefault().toDson(this, Output.HASH);
+				byte[] hashBytes = DefaultSerialization.getInstance().toDson(this, DsonOutput.Output.HASH);
 				hash = new Hash(Hash.hash256(hashBytes));
 			}
 
@@ -93,10 +93,10 @@ public abstract class BasicContainer
 
 	// HID //
 	@JsonProperty("hid")
-	@DsonOutput(Output.API)
+	@DsonOutput(DsonOutput.Output.API)
 	public synchronized final EUID getHID()
 	{
-		return getHash().getID();
+		return getHash().euid();
 	}
 
 	/**

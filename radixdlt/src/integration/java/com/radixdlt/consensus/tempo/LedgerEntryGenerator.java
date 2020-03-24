@@ -18,8 +18,8 @@
 package com.radixdlt.consensus.tempo;
 
 import com.google.common.collect.Lists;
-import com.radixdlt.common.AID;
-import com.radixdlt.common.Atom;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
@@ -57,7 +57,7 @@ public class LedgerEntryGenerator {
         Atom atom = new Atom();
         try {
             LedgerEntry ledgerEntry = new LedgerEntry(
-                Serialization.getDefault().toDson(atom, DsonOutput.Output.API),
+                DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.API),
                 AID.from(pKey)
             );
             return ledgerEntry;

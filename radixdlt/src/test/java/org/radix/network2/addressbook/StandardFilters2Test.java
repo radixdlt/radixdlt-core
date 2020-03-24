@@ -17,7 +17,7 @@
 
 package org.radix.network2.addressbook;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;

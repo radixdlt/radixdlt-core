@@ -44,7 +44,7 @@ public class RadixTest
 	public static void startRadixTest() throws Exception {
 		TestSetupUtils.installBouncyCastleProvider();
 
-		serialization = Serialization.getDefault();
+		serialization = DefaultSerialization.getInstance();
 
 		JSONObject runtimeConfigurationJSON = new JSONObject();
 		if (Radix.class.getResourceAsStream("/runtime_options.json") != null)

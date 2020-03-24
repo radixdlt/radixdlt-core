@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.safety;
 
-import com.radixdlt.common.AID;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.consensus.VoteMessage;
 
 import java.util.Objects;

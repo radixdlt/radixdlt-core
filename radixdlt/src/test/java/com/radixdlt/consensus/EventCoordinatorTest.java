@@ -18,9 +18,9 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.Lists;
-import com.radixdlt.common.AID;
-import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.atommodel.Atom;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;

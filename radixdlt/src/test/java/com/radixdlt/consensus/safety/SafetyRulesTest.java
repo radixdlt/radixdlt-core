@@ -22,9 +22,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.common.AID;
-import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.atommodel.Atom;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Round;
 import com.radixdlt.consensus.Vertex;

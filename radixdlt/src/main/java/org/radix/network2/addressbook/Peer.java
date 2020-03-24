@@ -22,6 +22,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerId2;
 import org.radix.containers.BasicContainer;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
@@ -35,10 +38,6 @@ import org.radix.universe.system.RadixSystem;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.common.EUID;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.serialization.DsonOutput.Output;
 
 // This could really be an interface, but some serialization quirks mean that
 // interfaces can't currently be part of a serialization type hierarchy.
@@ -49,7 +48,7 @@ public abstract class Peer extends BasicContainer {
 	public static final int DEFAULT_BANTIME = 60 * 60;
 
 	@JsonProperty("ban_reason")
-	@DsonOutput(Output.PERSIST)
+	@DsonOutput(DsonOutput.Output.PERSIST)
 	private String banReason;
 
 	private HashMap<String, Long> timestamps;
@@ -161,7 +160,7 @@ public abstract class Peer extends BasicContainer {
 
 	// Property "timestamps" - 1 getter, 1 setter
 	@JsonProperty("timestamps")
-	@DsonOutput(Output.PERSIST)
+	@DsonOutput(DsonOutput.Output.PERSIST)
 	private Map<String, Long> getJsonTimestamps() {
 		return ImmutableMap.<String, Long>builder()
 				.put("probed", getTimestamp(Timestamps.PROBED))

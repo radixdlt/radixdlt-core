@@ -18,9 +18,9 @@
 package com.radixdlt.middleware2.store;
 
 import com.google.inject.Inject;
-import com.radixdlt.common.AID;
-import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.atommodel.Atom;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.serialization.Serialization;

@@ -19,7 +19,7 @@ package com.radixdlt.network;
 
 import java.util.Collection;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.Validator;
 
 /**
