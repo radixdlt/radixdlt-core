@@ -59,7 +59,7 @@ public class EngineAtomEventListener implements AtomEventListener {
 			EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom, serialization);
 			Events.getInstance().broadcastWithException(new AtomStoredEvent(atom, () ->
 					engineAtomIndices.getDuplicateIndices().stream().filter(e -> e.getPrefix() == EngineAtomIndices.IndexType.DESTINATION.getValue())
-					.map(e -> EngineAtomIndices.toEUID(e.asKey()))
+					.map(e -> EngineAtomIndices.euid(e.asKey()))
 					.collect(Collectors.toSet()))
 			);
 		} catch (Throwable e) {
@@ -88,8 +88,8 @@ public class EngineAtomEventListener implements AtomEventListener {
 	public void onStateMissingDependency(AID atomId, Particle particle) {
 		final AtomDependencyNotFoundException notFoundException =
 			new AtomDependencyNotFoundException(
-				String.format("Atom has missing dependencies in transitions: %s", particle.getHID()),
-				Collections.singleton(particle.getHID())
+				String.format("Atom has missing dependencies in transitions: %s", particle.euid()),
+				Collections.singleton(particle.euid())
 			);
 
 		AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, atomId);

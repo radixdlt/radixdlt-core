@@ -163,9 +163,9 @@ public final class GenerateUniverses
 		genesisAtom.sign(universeKey);
 
 		if (standalone) {
-			byte[] sigBytes = serialization.toDson(genesisAtom.getSignature(universeKey.getUID()), Output.WIRE);
+			byte[] sigBytes = serialization.toDson(genesisAtom.getSignature(universeKey.euid()), Output.WIRE);
 			byte[] transactionBytes = serialization.toDson(genesisAtom, Output.HASH);
-			LOGGER.info("GENESIS TRANSACTION SIGNATURE " + universeKey.getUID() + ": " + Bytes.toHexString(sigBytes));
+			LOGGER.info("GENESIS TRANSACTION SIGNATURE " + universeKey.euid() + ": " + Bytes.toHexString(sigBytes));
 			LOGGER.info("GENESIS TRANSACTION HID: " + genesisAtom.getHash().euid());
 			LOGGER.info("GENESIS TRANSACTION HASH: " + genesisAtom.getHash().toString());
 			LOGGER.info("GENESIS TRANSACTION HASH DSON: " + Base64.getEncoder().encodeToString(transactionBytes));

@@ -187,7 +187,7 @@ public final class RadixJsonRpcServer {
 						final String addressString = params.getString("address");
 						final RadixAddress address = RadixAddress.from(addressString);
 
-						StoreIndex index = new StoreIndex(EngineAtomIndices.IndexType.DESTINATION.getValue(), address.getUID().toByteArray());
+						StoreIndex index = new StoreIndex(EngineAtomIndices.IndexType.DESTINATION.getValue(), address.euid().toByteArray());
 						List<AID> collectedAids = new ArrayList<>();
 						SearchCursor cursor = ledger.search(StoreIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
 						while (cursor != null) {

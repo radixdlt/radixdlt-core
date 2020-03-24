@@ -94,7 +94,7 @@ public abstract class BasicContainer
 	// HID //
 	@JsonProperty("hid")
 	@DsonOutput(DsonOutput.Output.API)
-	public synchronized final EUID getHID()
+	public synchronized final EUID euid()
 	{
 		return getHash().euid();
 	}
@@ -113,7 +113,7 @@ public abstract class BasicContainer
 	@Override
 	public String toString()
 	{
-		return this.getClass().toString()+": "+getHID().toString();
+		return this.getClass().toString()+": "+euid().toString();
 	}
 
 	public abstract short VERSION();

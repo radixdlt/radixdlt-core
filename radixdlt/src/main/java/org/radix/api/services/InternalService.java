@@ -185,7 +185,7 @@ public final class InternalService {
 		}
 
 		int nonceBits = this.properties.get("test.nullatom.junk_size", 40);
-		Thread spammerThread = new Thread(new Spammer(new ECKeyPair(), Integer.decode(iterations), batching == null ? 1 : Integer.decode(batching), Integer.decode(rate), nonceBits));
+		Thread spammerThread = new Thread(new Spammer(ECKeyPair.generateNew(), Integer.decode(iterations), batching == null ? 1 : Integer.decode(batching), Integer.decode(rate), nonceBits));
 		spammerThread.setDaemon(true);
 		spammerThread.setName("Spammer " + System.currentTimeMillis());
 		spammerThread.start();

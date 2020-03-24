@@ -47,7 +47,7 @@ public class LedgerEntryGenerator {
     }
 
     public List<LedgerEntry> createLedgerEntries(int n) throws Exception {
-        ECKeyPair identity = new ECKeyPair();
+        ECKeyPair identity = ECKeyPair.generateNew();
         return createLedgerEntries(identity, n);
     }
 

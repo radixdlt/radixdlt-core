@@ -53,7 +53,7 @@ public class TokenDefinitionSchemaTest {
 
 	@Test
 	public void when_validating_complete_tokendefinition_particle_against_schema__validation_is_successful() throws CryptoException {
-		ECKeyPair kp = new ECKeyPair();
+		ECKeyPair kp = ECKeyPair.generateNew();
 		RadixAddress addr = new RadixAddress((byte) 12, kp.getPublicKey());
 		Map<TokenTransition, TokenPermission> tp = ImmutableMap.of(
 			TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,

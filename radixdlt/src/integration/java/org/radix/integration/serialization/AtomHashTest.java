@@ -34,7 +34,7 @@ public class AtomHashTest extends RadixTest {
 	@Test
 	public void testThatParticleSpinAffectsAtomHash() throws CryptoException {
 		Universe universe = getUniverse();
-		RRIParticle p = new RRIParticle(RRI.of(RadixAddress.from(universe, new ECKeyPair().getPublicKey()), "test"));
+		RRIParticle p = new RRIParticle(RRI.of(RadixAddress.from(universe, ECKeyPair.generateNew().getPublicKey()), "test"));
 		Atom atom1 = new Atom();
 		atom1.addParticleGroupWith(p, Spin.UP);
 

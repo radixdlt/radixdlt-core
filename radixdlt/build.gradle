@@ -69,7 +69,6 @@ dependencies {
     implementation project(':radix-engine-library')
 
     compile 'commons-cli:commons-cli:1.4'
-//    compile 'org.json:json:20180813'
     compile 'org.xerial.snappy:snappy-java:1.1.7.3'
     compile 'io.netty:netty-all:4.1.39.Final'
     compile('com.google.inject:guice:4.2.2') {
@@ -87,25 +86,6 @@ dependencies {
     }
 
     // TODO: replace BerkleyDB dep with Vamos
-    //compile group: 'com.sleepycat', name: 'je', version: '7.4.5'
-
-//    compile('org.reflections:reflections:0.9.11') {
-//        exclude group: 'com.google.guava', module: 'guava'
-//    }
-
-    // Jackson serializer
-//    compile 'com.fasterxml.jackson.core:jackson-core:2.9.9'
-//    compile 'com.fasterxml.jackson.core:jackson-databind:2.9.9'
-//    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.9.9'
-//    compile('com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.9.9') {
-//        // Use our JSON lib
-//        exclude group: 'org.json', module: 'json'
-//    }
-//    compile('com.fasterxml.jackson.datatype:jackson-datatype-guava:2.9.9') {
-//        // Use our Guava lib
-//        exclude group: 'com.google.guava', module: 'guava'
-//    }
-
     //compile project(':vamos')
 
     compile group: 'io.undertow', name: 'undertow-core', version: '2.0.6.Final'

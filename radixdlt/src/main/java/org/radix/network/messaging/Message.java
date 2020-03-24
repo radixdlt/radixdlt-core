@@ -128,6 +128,6 @@ public abstract class Message extends BasicContainer
 	@Override
 	public String toString()
 	{
-		return this.instance+" -> "+this.getCommand()+":"+this.getDirection()+":"+this.getHID()+" @ "+this.getTimestamp();
+		return this.instance+" -> "+this.getCommand()+":"+this.getDirection()+":"+this.euid()+" @ "+this.getTimestamp();
 	}
 }

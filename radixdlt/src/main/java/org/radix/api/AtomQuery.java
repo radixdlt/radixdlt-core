@@ -26,7 +26,7 @@ public class AtomQuery {
 	private final EUID destination;
 
 	public AtomQuery(RadixAddress address) {
-		this.destination = address.getUID();
+		this.destination = address.euid();
 	}
 
 	public AtomQuery(EUID destination) {

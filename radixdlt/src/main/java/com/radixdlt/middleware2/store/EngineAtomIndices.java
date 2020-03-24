@@ -98,7 +98,7 @@ public class EngineAtomIndices {
 							throw new IllegalStateException("Unknown SPIN state for particle " + nextSpin);
 					}
 
-					final byte[] indexableBytes = toByteArray(indexType, i.getParticle().getHID());
+					final byte[] indexableBytes = toByteArray(indexType, i.getParticle().euid());
 					uniqueIndices.add(new StoreIndex(indexableBytes));
 				});
 
@@ -166,7 +166,7 @@ public class EngineAtomIndices {
 		return typeBytes;
 	}
 
-	public static EUID toEUID(byte[] bytes)
+	public static EUID euid(byte[] bytes)
 	{
 		byte[] temp = new byte[bytes.length-1];
 		System.arraycopy(bytes, 1, temp, 0, temp.length);

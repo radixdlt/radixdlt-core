@@ -32,7 +32,7 @@ public class AtomSubmitMessageSerializeTest extends SerializeMessageObject<AtomS
 
 	private static AtomSubmitMessage get() {
 		try {
-			ECKeyPair key = new ECKeyPair();
+			ECKeyPair key = ECKeyPair.generateNew();
 			Atom atom = new Atom();
 			atom.sign(key);
 			return new AtomSubmitMessage(atom, 1);

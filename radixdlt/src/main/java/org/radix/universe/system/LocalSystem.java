@@ -62,7 +62,7 @@ public final class LocalSystem extends RadixSystem
 	{
 		super();
 
-		this.keyPair = new ECKeyPair();
+		this.keyPair = ECKeyPair.generateNew();
 	}
 
 	public LocalSystem(ECKeyPair key, String agent, int agentVersion, int protocolVersion, ImmutableList<TransportInfo> supportedTransports)

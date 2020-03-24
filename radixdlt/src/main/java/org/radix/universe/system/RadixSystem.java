@@ -158,7 +158,7 @@ public class RadixSystem extends BasicContainer
 
 	public EUID getNID()
 	{
-		return this.key == null ? EUID.ZERO : this.key.getUID();
+		return this.key == null ? EUID.ZERO : this.key.euid();
 	}
 
 	// Property "agent" - 1 getter, 1 setter
@@ -200,6 +200,6 @@ public class RadixSystem extends BasicContainer
 	@JsonProperty("nid")
 	@DsonOutput(Output.ALL)
 	EUID getJsonNid() {
-		return this.key == null ? null : this.key.getUID();
+		return this.key == null ? null : this.key.euid();
 	}
 }

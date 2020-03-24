@@ -39,7 +39,7 @@ public class UniverseTest {
     @Test
     public void testValidUniverse() throws Exception {
 
-        ECKeyPair creator = new ECKeyPair();
+        ECKeyPair creator = ECKeyPair.generateNew();
 
 	    Atom genesisAtom = createGenesisAtom(Universe.computeMagic(creator.getPublicKey(), 0, 0, Universe.UniverseType.TEST, 0), 0);
         genesisAtom.sign(creator);
@@ -62,7 +62,7 @@ public class UniverseTest {
 
     @Test
     public void testUniverseValidationInvalidSignature() throws Exception {
-        ECKeyPair creator = new ECKeyPair();
+        ECKeyPair creator = ECKeyPair.generateNew();
 
 	    Atom genesisAtom = createGenesisAtom(Universe.computeMagic(creator.getPublicKey(), 0, 0, Universe.UniverseType.TEST, 0), 0);
         genesisAtom.sign(creator);
@@ -86,7 +86,7 @@ public class UniverseTest {
 
     private Atom createGenesisAtom(int magic, long timestamp) throws CryptoException {
         MutableSupplyTokenDefinitionParticle pow = new MutableSupplyTokenDefinitionParticle(
-			new RadixAddress((byte) (magic & 0xFF), new ECKeyPair().getPublicKey()),
+			new RadixAddress((byte) (magic & 0xFF), ECKeyPair.generateNew().getPublicKey()),
 			"XRD", "Proof of Launch", "Radix Tokens",
 			UInt256.ONE,
 			null,
