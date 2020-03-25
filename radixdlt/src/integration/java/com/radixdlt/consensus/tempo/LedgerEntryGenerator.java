@@ -18,11 +18,11 @@
 package com.radixdlt.consensus.tempo;
 
 import com.google.common.collect.Lists;
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.store.LedgerEntry;
 

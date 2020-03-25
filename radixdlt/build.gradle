@@ -61,12 +61,12 @@ jacocoTestReport {
 }
 
 dependencies {
-    implementation 'io.reactivex.rxjava3:rxjava:3.0.0'
-    implementation 'com.sleepycat:je:18.3.12'
+    compile 'io.reactivex.rxjava3:rxjava:3.0.0'
+    compile 'com.sleepycat:je:18.3.12'
 //    implementation 'com.github.radixdlt:radix-engine-library:rc~1.0-beta.5-SNAPSHOT'
 
-    implementation project(':radixdlt-java-common')
-    implementation project(':radix-engine-library')
+    compile project(':radixdlt-java-common')
+    compile project(':radix-engine-library')
 
     compile 'commons-cli:commons-cli:1.4'
     compile 'org.xerial.snappy:snappy-java:1.1.7.3'

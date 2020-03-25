@@ -18,6 +18,7 @@
 package com.radixdlt.store.berkeley;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.store.StoreIndex;

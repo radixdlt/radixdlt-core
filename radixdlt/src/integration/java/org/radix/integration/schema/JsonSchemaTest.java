@@ -69,7 +69,7 @@ public class JsonSchemaTest extends RadixTest {
 		ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 
 		MutableSupplyTokenDefinitionParticle testToken = new MutableSupplyTokenDefinitionParticle(
-			RadixAddress.from(getUniverse(), ecKeyPair.getPublicKey()),
+			new RadixAddress((byte) getUniverse().getMagic(), ecKeyPair.getPublicKey()),
 			"TEST",
 			"Test RADS",
 			"Radix Test Tokens",
@@ -92,7 +92,7 @@ public class JsonSchemaTest extends RadixTest {
 	@Test
 	public void testTransferAtom() throws Exception {
 		ECKeyPair ecKeyPair = ECKeyPair.generateNew();
-		RadixAddress address = RadixAddress.from(getUniverse(), ecKeyPair.getPublicKey());
+		RadixAddress address = new RadixAddress((byte) getUniverse().getMagic(), ecKeyPair.getPublicKey());
 
 		Atom transactionAtom = new Atom(1L);
 		transactionAtom.addParticleGroupWith(new MessageParticle(address, address, "Radix....Just Imagine".getBytes(RadixConstants.STANDARD_CHARSET)), Spin.UP);

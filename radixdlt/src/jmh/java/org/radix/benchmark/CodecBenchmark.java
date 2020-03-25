@@ -18,6 +18,7 @@
 package org.radix.benchmark;
 
 
+import com.radixdlt.DefaultSerialization;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.infra.Blackhole;
 import org.radix.logging.Logging;

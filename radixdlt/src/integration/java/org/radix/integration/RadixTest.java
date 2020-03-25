@@ -17,6 +17,7 @@
 
 package org.radix.integration;
 
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 import org.json.JSONObject;
