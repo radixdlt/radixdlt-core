@@ -19,33 +19,34 @@ package com.radixdlt.network.transport.udp;
 
 import io.netty.channel.socket.DatagramChannel;
 
-import org.junit.Before;
 import org.junit.Test;
 import com.radixdlt.network.transport.SendResult;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportMetadata;
+
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.*;
 
 public class UDPTransportOutboundConnectionTest2 {
-	@Before
-	public void setUp() {
-		PublicInetAddress.configure(12345);
-	}
-
 	@Test
 	public void sendTooLong() throws ExecutionException, InterruptedException, IOException {
-		PublicInetAddress.configure(30000);
 		DatagramChannel channel = mock(DatagramChannel.class);
 		TransportMetadata metadata = StaticTransportMetadata.of(
 			UDPConstants.METADATA_HOST, "localhost",
 			UDPConstants.METADATA_PORT, "443"
 		);
-		try (UDPTransportOutboundConnection udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata)) {
+		InetAddress sourceAddress = mock(InetAddress.class);
+		when(sourceAddress.getAddress()).thenReturn(new byte[4]);
+		NatHandler natHandler = mock(NatHandler.class);
+		when(natHandler.getAddress()).thenReturn(sourceAddress);
+		try (UDPTransportOutboundConnection udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata, natHandler)) {
 			byte[] data = new byte[UDPConstants.MAX_PACKET_LENGTH + 1];
 			CompletableFuture<SendResult> completableFuture = udpTransportOutboundConnection.send(data);
 
@@ -55,5 +56,24 @@ public class UDPTransportOutboundConnectionTest2 {
 			assertThat(result.isComplete()).isEqualTo(false);
 			assertThat(result.getThrowable().getMessage()).contains("is too large");
 		}
+	}
+
+	@Test
+	public void sensibleToString() {
+		TransportMetadata metadata = StaticTransportMetadata.of(
+			UDPConstants.METADATA_HOST, "localhost",
+			UDPConstants.METADATA_PORT, "443"
+		);
+		DatagramChannel channel = mock(DatagramChannel.class);
+		NatHandler natHandler = mock(NatHandler.class);
+
+		// No resource issues as everything is mocked
+		@SuppressWarnings("resource")
+		UDPTransportOutboundConnection oci = new UDPTransportOutboundConnection(channel, metadata, natHandler);
+		String s = oci.toString();
+
+		assertThat(s, containsString(UDPConstants.NAME));
+		assertThat(s, containsString(metadata.get(UDPConstants.METADATA_HOST)));
+		assertThat(s, containsString(metadata.get(UDPConstants.METADATA_PORT)));
 	}
 }
