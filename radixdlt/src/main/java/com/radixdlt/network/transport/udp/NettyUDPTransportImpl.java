@@ -70,7 +70,7 @@ final class NettyUDPTransportImpl implements Transport {
 	private final int priority;
 	private final AtomicInteger threadCounter = new AtomicInteger(0);
 	private final InetSocketAddress bindAddress;
-	private final PublicInetAddress natHandler;
+	private final NatHandler natHandler;
 	private final Object channelLock = new Object();
 
 	private DatagramChannel channel;
@@ -84,7 +84,7 @@ final class NettyUDPTransportImpl implements Transport {
 		@Named("local") TransportMetadata localMetadata,
 		UDPTransportControlFactory controlFactory,
 		UDPTransportOutboundConnectionFactory connectionFactory,
-		PublicInetAddress natHandler
+		NatHandler natHandler
 	) {
 		String providedHost = localMetadata.get(UDPConstants.METADATA_HOST);
 		if (providedHost == null) {
@@ -151,9 +151,8 @@ final class NettyUDPTransportImpl implements Transport {
 	            		.setSendBufferSize(SND_BUF_SIZE)
 	            		.setOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(MAX_DATAGRAM_SIZE));
 	        		if (log.isDebugEnabled()) {
-	        			LogSink ls = LogSink.forDebug(log);
 	        			ch.pipeline()
-	        				.addLast(new LoggingHandler(ls, DEBUG_DATA));
+	        				.addLast(new LoggingHandler(LogSink.using(log), DEBUG_DATA));
 	        		}
 	                ch.pipeline()
 	                	.addLast("onboard", new UDPNettyMessageHandler(natHandler, messageSink));
@@ -163,7 +162,7 @@ final class NettyUDPTransportImpl implements Transport {
 	    	synchronized (channelLock) {
 	    		close();
 	    		this.channel = (DatagramChannel) b.bind(bindAddress).sync().channel();
-	    		this.control = controlFactory.create(this.channel, connectionFactory);
+	    		this.control = controlFactory.create(this.channel, connectionFactory, natHandler);
 	    	}
 	    } catch (InterruptedException e) {
 	    	// Abort!

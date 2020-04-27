@@ -32,11 +32,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
@@ -72,18 +74,17 @@ final class NetworkQueryHostIp implements HostIp {
 	static HostIp create(RuntimeProperties properties) {
 		String urlsProperty = properties.get(QUERY_URLS_PROPERTY, "");
 		if (urlsProperty == null || urlsProperty.trim().isEmpty()) {
-			log.info("Using default URL list {}", DEFAULT_QUERY_URLS);
 			return create(DEFAULT_QUERY_URLS);
 		}
 		ImmutableList<URL> urls = Arrays.asList(urlsProperty.split(","))
 			.stream()
 			.map(NetworkQueryHostIp::makeurl)
 			.collect(ImmutableList.toImmutableList());
-		log.info("Using URL list {}", urls);
 		return create(urls);
 	}
 
 	private final List<URL> hosts;
+	private final Supplier<Optional<String>> result = Suppliers.memoize(this::get);
 
 	NetworkQueryHostIp(Collection<URL> urls) {
 		if (urls.isEmpty()) {
@@ -98,12 +99,17 @@ final class NetworkQueryHostIp implements HostIp {
 
 	@Override
 	public Optional<String> hostIp() {
+		return result.get();
+	}
+
+	Optional<String> get() {
 		return publicIp((count() + 1) / 2); // Round up
 	}
 
 	Optional<String> publicIp(int threshold) {
 		// Make sure we don't DoS the first one on the list
 		Collections.shuffle(this.hosts);
+		log.debug("Using hosts {}", this.hosts);
 		final Map<HostAndPort, AtomicInteger> ips = Maps.newHashMap();
 		for (URL url : this.hosts) {
 			HostAndPort q = query(url);
@@ -150,7 +156,7 @@ final class NetworkQueryHostIp implements HostIp {
 		} catch (IOException | IllegalArgumentException ex) {
 			// Ignored
 			if (log.isDebugEnabled()) {
-				log.debug("Host " + url + " failed with exception", ex);
+				log.debug(String.format("Host %s failed with exception", url), ex);
 			}
 			return null;
 		}
