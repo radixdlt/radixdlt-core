@@ -105,7 +105,7 @@ public class MiddlewareModule extends AbstractModule {
 			virtualStoreLayer,
 			engineStore
 		);
-		radixEngine.addCMSuccessHook(ledgerAtomChecker);
+//		radixEngine.addCMSuccessHook(ledgerAtomChecker); TODO Hack: Disabled fee check for chess hackathon
 		radixEngine.addAtomEventListener(new EngineAtomEventListener(serialization));
 
 		return radixEngine;
