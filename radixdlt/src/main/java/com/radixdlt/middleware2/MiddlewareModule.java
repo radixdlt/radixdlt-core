@@ -24,6 +24,7 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
+import com.radixdlt.atommodel.tokens.AmmConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
@@ -54,6 +55,7 @@ public class MiddlewareModule extends AbstractModule {
 			}
 			return Result.success();
 		});
+		os.load(new AmmConstraintScrypt());
 		os.load(new TokensConstraintScrypt());
 		os.load(new UniqueParticleConstraintScrypt());
 		os.load(new MessageParticleConstraintScrypt());
