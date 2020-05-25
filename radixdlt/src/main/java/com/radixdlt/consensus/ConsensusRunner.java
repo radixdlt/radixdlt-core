@@ -29,6 +29,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observables.ConnectableObservable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Subscription Manager (Start/Stop) to the processing of Consensus events under
@@ -95,7 +96,7 @@ public final class ConsensusRunner {
 		final Completable firstEventCoordinator = Completable.fromSingle(eventCoordinators.firstOrError());
 		final Observable<Object> eventCoordinatorEvents = Observable.merge(
 			pacemakerRx.localTimeouts().observeOn(singleThreadScheduler),
-			network.consensusEvents().observeOn(singleThreadScheduler),
+			network.consensusEvents().delay(100, TimeUnit.MILLISECONDS).observeOn(singleThreadScheduler),
 			network.rpcRequests().observeOn(singleThreadScheduler)
 		);
 		final Observable<Event> ecMessages = firstEventCoordinator.andThen(

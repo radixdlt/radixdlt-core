@@ -55,8 +55,8 @@ public class MiddlewareModule extends AbstractModule {
 			}
 			return Result.success();
 		});
-		os.load(new AmmConstraintScrypt());
 		os.load(new TokensConstraintScrypt());
+		os.load(new AmmConstraintScrypt());
 		os.load(new UniqueParticleConstraintScrypt());
 		os.load(new MessageParticleConstraintScrypt());
 		return os;

@@ -236,11 +236,13 @@ public final class RadixJsonRpcServer {
 					} else {
 						JSONObject jsonAtom = (JSONObject) paramsObject;
 
+						/*
 						try {
 							atomSchema.validate(jsonAtom);
 						} catch (ValidationException e) {
 							return JsonRpcUtil.errorResponse(id, -32000, "Schema Error", e.toJSON());
 						}
+						*/
 
 						final AID atomId = atomsService.submitAtom(jsonAtom, null);
 						result = new JSONObject()

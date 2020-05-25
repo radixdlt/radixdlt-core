@@ -65,7 +65,10 @@ class SubmissionControlImpl implements SubmissionControl {
 		try {
 			this.radixEngine.staticCheck(atom);
 			this.mempool.addAtom(atom);
+			System.out.println("Added");
 		} catch (RadixEngineException e) {
+			log.info(e.getCmError());
+			log.info(e.getCmError().getCmValidationState());
 			log.info(
 				"Rejecting atom {} with error '{}' at '{}'.",
 				atom.getAID(),
@@ -78,6 +81,7 @@ class SubmissionControlImpl implements SubmissionControl {
 
 	@Override
 	public void submitAtom(JSONObject atomJson, Consumer<LedgerAtom> deserialisationCallback) throws MempoolFullException, MempoolDuplicateException {
+		System.out.println(atomJson);
 		final Atom rawAtom = this.serialization.fromJsonObject(atomJson, Atom.class);
 		try {
 			final LedgerAtom atom = converter.convert(rawAtom);
