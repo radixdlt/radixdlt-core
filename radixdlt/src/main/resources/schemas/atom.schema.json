@@ -127,12 +127,13 @@
     },
     "particle": {
       "oneOf": [
-        { "$ref": "#/definitions/rriParticle" },
-        { "$ref": "#/definitions/mutableSupplyTokenDefinitionParticle" },
+        { "$ref": "#/definitions/cruDataParticle"},
         { "$ref": "#/definitions/fixedSupplyTokenDefinitionParticle" },
         { "$ref": "#/definitions/messageParticle" },
-        { "$ref": "#/definitions/unallocatedTokensParticle" },
+        { "$ref": "#/definitions/mutableSupplyTokenDefinitionParticle" },
+        { "$ref": "#/definitions/rriParticle" },
         { "$ref": "#/definitions/transferrableTokensParticle" },
+        { "$ref": "#/definitions/unallocatedTokensParticle" },
         { "$ref": "#/definitions/uniqueParticle" }
       ],
       "description": "A particle which is a component which represents a substate of the ledger."
@@ -158,6 +159,29 @@
       "additionalProperties": false,
       "required": [ "rri", "nonce" ],
       "description": "A particle which represents an RRI."
+    },
+    "cruDataParticle": {
+      "type": "object",
+      "properties": {
+        "destinations": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/uid" },
+          "minItems": 1
+        },
+        "rri": { "$ref": "#/definitions/radixResourceIdentifier" },
+        "serialno": { "type": "number" },
+        "data": { "$ref": "#/definitions/bytes" },
+        "serializer": {
+          "type": "string",
+          "enum": [ "radix.particles.cru" ]
+        },
+        "version": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false,
+      "required": [ "serializer", "rri", "serialno" ],
+      "description": "A particle which represents create/read/update data."
     },
     "mutableSupplyTokenDefinitionParticle": {
       "type": "object",
