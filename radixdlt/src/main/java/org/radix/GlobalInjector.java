@@ -26,7 +26,6 @@ import com.google.inject.name.Names;
 import com.radixdlt.CerberusModule;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECKeyPair;
@@ -65,7 +64,7 @@ public class GlobalInjector {
 				bind(DatabaseEnvironment.class).toInstance(dbEnv);
 				bind(Universe.class).toInstance(universe);
 
-				bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+				bind(SystemCounters.class).toProvider(SystemCounters::getInstance).in(Scopes.SINGLETON);
 
 				bind(LocalSystem.class).toProvider(LocalSystemProvider.class).in(Scopes.SINGLETON);
 

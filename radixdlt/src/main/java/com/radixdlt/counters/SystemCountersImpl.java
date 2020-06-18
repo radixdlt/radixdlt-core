@@ -24,17 +24,14 @@ import com.google.common.collect.Maps;
 /**
  * Event counting utility class.
  */
-public final class SystemCountersImpl implements SystemCounters {
+enum SystemCountersImpl implements SystemCounters {
+	INSTANCE;
+
 	private final String since;
 
-	public SystemCountersImpl() {
-		this(System.currentTimeMillis());
+	SystemCountersImpl() {
+		this.since = Instant.ofEpochMilli(System.currentTimeMillis()).toString();
 	}
-
-	public SystemCountersImpl(long startTime) {
-		this.since = Instant.ofEpochMilli(startTime).toString();
-	}
-
 
 	@Override
 	public Map<String, Object> toMap() {
