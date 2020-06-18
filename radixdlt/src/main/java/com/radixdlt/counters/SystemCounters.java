@@ -111,7 +111,7 @@ public interface SystemCounters {
 
 
 	/**
-	 * Provides the system wide set of counters which should be used by the radyx platform.
+	 * Provides the system wide set of counters which should be used by the radyx services.
 	 * @return a <b>thread safe</b> SystemCounters implementation which is backed by system wide counters.
 	 */
 	static SystemCounters getInstance() {
@@ -126,7 +126,7 @@ public interface SystemCounters {
 	 * the system-wide once provided by the getInstance method.
 	 */
 	static SystemCounters newInstance(Function<CounterType, AtomicLong> supplier) {
-		return new SystemCountersImpl(supplier, System.currentTimeMillis());
+		return new SystemCountersImpl(supplier,System.currentTimeMillis());
 	}
 
 }
