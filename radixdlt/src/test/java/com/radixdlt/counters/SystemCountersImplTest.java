@@ -32,18 +32,18 @@ public class SystemCountersImplTest {
 
 	@After
 	public void tearDown() {
-		SystemCounters.reset();
+		SystemCounters.getInstance().reset();
 	}
 
 	@Test
 	public void when_get_count__then_count_should_be_0() {
-		SystemCounters counters = new SystemCountersImpl();
+		SystemCounters counters = SystemCounters.getInstance();
 		assertThat(counters.get(CounterType.CONSENSUS_TIMEOUT)).isEqualTo(0L);
 	}
 
 	@Test
 	public void when_increment__then_count_should_be_1() {
-		SystemCounters counters = new SystemCountersImpl();
+		SystemCounters counters = SystemCounters.getInstance();
 		counters.increment(CounterType.CONSENSUS_TIMEOUT);
 		assertThat(counters.get(CounterType.CONSENSUS_TIMEOUT)).isEqualTo(1L);
 		counters.increment(CounterType.CONSENSUS_TIMEOUT);
@@ -52,7 +52,7 @@ public class SystemCountersImplTest {
 
 	@Test
 	public void when_add__then_count_should_be_added_value() {
-		SystemCounters counters = new SystemCountersImpl();
+		SystemCounters counters = SystemCounters.getInstance();
 		counters.add(CounterType.CONSENSUS_TIMEOUT, 1234);
 		assertThat(counters.get(CounterType.CONSENSUS_TIMEOUT)).isEqualTo(1234L);
 		counters.add(CounterType.CONSENSUS_TIMEOUT, 4321);
@@ -61,7 +61,7 @@ public class SystemCountersImplTest {
 
 	@Test
 	public void when_set__then_count_should_be_1() {
-		SystemCounters counters = new SystemCountersImpl();
+		SystemCounters counters = SystemCounters.getInstance();
 		counters.set(CounterType.CONSENSUS_TIMEOUT, 1234);
 		assertThat(counters.get(CounterType.CONSENSUS_TIMEOUT)).isEqualTo(1234L);
 		counters.set(CounterType.CONSENSUS_TIMEOUT, 4321);
@@ -70,7 +70,7 @@ public class SystemCountersImplTest {
 
 	@Test
 	public void when_tomap__then_values_correct() {
-		SystemCounters counters = new SystemCountersImpl();
+		SystemCounters counters = SystemCounters.getInstance();
 		for (CounterType value : CounterType.values()) {
 			counters.set(value, ordinal(value));
 		}
@@ -82,7 +82,7 @@ public class SystemCountersImplTest {
 
 	@Test
 	public void sensible_tostring() {
-		SystemCounters counters = new SystemCountersImpl();
+		SystemCounters counters = SystemCounters.getInstance();
 		counters.set(CounterType.CONSENSUS_TIMEOUT, 1234);
 		String s = counters.toString();
 		assertThat(s).contains(SystemCountersImpl.class.getSimpleName());

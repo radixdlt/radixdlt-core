@@ -105,15 +105,26 @@ public interface SystemCounters {
 		return counterType.counter.get();
 	}
 
-	static void reset() {
+	/**
+	 * Returns the current values as a map.
+	 * @return the current values as a map
+	 */
+	Map<String, Object> toMap();
+
+	/**
+	 * Resets <b>all</b> the counters to <b>zero</b>.
+	 */
+	default void reset() {
 		for (CounterType counterType : CounterType.values()) {
 			counterType.counter.set(0L);
 		}
 	}
 
 	/**
-	 * Returns the current values as a map.
-	 * @return the current values as a map
+	 * @return a <b>thread safe</b> object which implements this instance.
+	 * In the current implementation there is only one SystemCounters object per JVM.
 	 */
-	Map<String, Object> toMap();
+	static SystemCounters getInstance() {
+		return SystemCountersImpl.INSTANCE;
+	}
 }

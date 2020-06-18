@@ -46,7 +46,6 @@ import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -122,7 +121,7 @@ public class SimulatedBFTNetwork {
 				.map(pk -> Validator.from(pk, UInt256.ONE))
 				.collect(Collectors.toList())
 		);
-		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new SystemCountersImpl()));
+		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> SystemCounters.getInstance()));
 		this.syncSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new InternalMessagePasser()));
 		this.vertexStores = nodes.stream()
 			.collect(ImmutableMap.toImmutableMap(
