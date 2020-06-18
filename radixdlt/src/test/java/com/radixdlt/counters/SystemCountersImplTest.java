@@ -20,6 +20,7 @@ package com.radixdlt.counters;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.junit.After;
 import org.junit.Test;
 
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -28,6 +29,12 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.Assert.assertNotNull;
 
 public class SystemCountersImplTest {
+
+	@After
+	public void tearDown() {
+		SystemCounters.reset();
+	}
+
 	@Test
 	public void when_get_count__then_count_should_be_0() {
 		SystemCounters counters = new SystemCountersImpl();

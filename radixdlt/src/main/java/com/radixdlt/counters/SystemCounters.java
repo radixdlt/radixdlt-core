@@ -18,6 +18,7 @@
 package com.radixdlt.counters;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * System counters interface.
@@ -51,6 +52,8 @@ public interface SystemCounters {
 
 		private final String jsonPath;
 
+		private final AtomicLong counter = new AtomicLong(0);
+
 		CounterType(String jsonPath) {
 			this.jsonPath = jsonPath;
 		}
@@ -66,7 +69,9 @@ public interface SystemCounters {
 	 * @param counterType The counter to increment
 	 * @return The new incremented value
 	 */
-	long increment(CounterType counterType);
+	default long increment(CounterType counterType) {
+		return counterType.counter.incrementAndGet();
+	}
 
 	/**
 	 * Increments the specified counter by the specified amount,
@@ -75,7 +80,9 @@ public interface SystemCounters {
 	 * @param counterType The counter to increment
 	 * @return The new incremented value
 	 */
-	long add(CounterType counterType, long amount);
+	default long add(CounterType counterType, long amount) {
+		return counterType.counter.addAndGet(amount);
+	}
 
 	/**
 	 * Sets the specified counter to the specified value,
@@ -84,7 +91,9 @@ public interface SystemCounters {
 	 * @param counterType The counter to increment
 	 * @return The previous value
 	 */
-	long set(CounterType counterType, long value);
+	default long set(CounterType counterType, long value) {
+		return counterType.counter.getAndSet(value);
+	}
 
 	/**
 	 * Returns the current value of the specified counter.
@@ -92,7 +101,15 @@ public interface SystemCounters {
 	 * @param counterType The counter value to return
 	 * @return The current value of the counter
 	 */
-	long get(CounterType counterType);
+	default long get(CounterType counterType) {
+		return counterType.counter.get();
+	}
+
+	static void reset() {
+		for (CounterType counterType : CounterType.values()) {
+			counterType.counter.set(0L);
+		}
+	}
 
 	/**
 	 * Returns the current values as a map.
