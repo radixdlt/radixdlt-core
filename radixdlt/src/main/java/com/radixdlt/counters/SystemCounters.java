@@ -115,8 +115,7 @@ public interface SystemCounters {
 	 * @return a <b>thread safe</b> SystemCounters implementation which is backed by system wide counters.
 	 */
 	static SystemCounters getInstance() {
-		return new SystemCountersImpl(counterType -> counterType.counter,
-				System.currentTimeMillis());
+		return new SystemCountersImpl(counterType -> counterType.counter, System.currentTimeMillis());
 	}
 
 	/**

@@ -39,10 +39,6 @@ import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-<<<<<<< HEAD
-=======
-import com.radixdlt.crypto.ECDSASignatures;
->>>>>>> 7d1277a4... Provide both a system wide counter and the possibility to instatiate
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.EmptyMempool;
@@ -111,53 +107,9 @@ public class SimulatedBFTNetwork {
 		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.pacemakerTimeout = pacemakerTimeout;
-<<<<<<< HEAD
-		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> SystemCounters.newInstance(CountersMap::new)));
+		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> SystemCounters.newInstance(new CountersMap())));
 		this.internalMessages = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new InternalMessagePasser()));
 		this.vertexStores = new ConcurrentHashMap<>();
-=======
-		this.genesisVertex = Vertex.createGenesis(null);
-		this.genesisQC = new QuorumCertificate(
-			new VoteData(new VertexMetadata(genesisVertex.getView(), genesisVertex.getId(), 1), null, null),
-			new ECDSASignatures()
-		);
-		this.validatorSet = ValidatorSet.from(
-			nodes.stream()
-				.map(ECKeyPair::getPublicKey)
-				.map(pk -> Validator.from(pk, UInt256.ONE))
-				.collect(Collectors.toList())
-		);
-		this.counters = nodes.stream()
-				.collect(ImmutableMap.toImmutableMap(e -> e, e -> SystemCounters.newInstance(new CountersMap())));
-		this.syncSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new InternalMessagePasser()));
-		this.vertexStores = nodes.stream()
-			.collect(ImmutableMap.toImmutableMap(
-				e -> e,
-				e -> {
-					SyncedStateComputer<CommittedAtom> stateComputer = new SyncedStateComputer<CommittedAtom>() {
-						@Override
-						public boolean syncTo(long targetStateVersion, List<ECPublicKey> target, Object opaque) {
-							return true;
-						}
-
-						@Override
-						public void execute(CommittedAtom instruction) {
-						}
-					};
-					SyncVerticesRPCSender syncVerticesRPCSender = getVerticesRPCEnabled
-						? underlyingNetwork.getVerticesRequestSender(e.getPublicKey())
-						: EmptySyncVerticesRPCSender.INSTANCE;
-					return new VertexStore(
-						genesisVertex,
-						genesisQC,
-						stateComputer,
-						syncVerticesRPCSender,
-						this.syncSenders.get(e),
-						this.counters.get(e)
-					);
-				})
-			);
->>>>>>> 7d1277a4... Provide both a system wide counter and the possibility to instatiate
 		this.timeoutSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(
 			e -> e,
 			e -> new ScheduledTimeoutSender(Executors.newSingleThreadScheduledExecutor(daemonThreads("TimeoutSender")))
@@ -287,21 +239,6 @@ public class SimulatedBFTNetwork {
 
 		CountersMap() {
 			for (CounterType counter : CounterType.values()) {
-				counters.put(counter , new AtomicLong(0));
-			}
-		}
-
-		@Override
-		public AtomicLong apply(CounterType counterType) {
-			return counters.get(counterType);
-		}
-	}
-
-	private static class CountersMap implements Function<CounterType, AtomicLong> {
-		private final EnumMap<CounterType, AtomicLong> counters = new EnumMap<>(CounterType.class);
-
-		CountersMap() {
-			for (CounterType counter : CounterType.values()) {
 				counters.put(counter, new AtomicLong(0));
 			}
 		}
@@ -311,4 +248,5 @@ public class SimulatedBFTNetwork {
 			return counters.get(counterType);
 		}
 	}
+
 }

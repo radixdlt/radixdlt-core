@@ -36,7 +36,6 @@ final class SystemCountersImpl implements SystemCounters {
 		this.supplier = supplier;
 	}
 
-
 	@Override
 	public long increment(CounterType counterType) {
 		return supplier.apply(counterType).incrementAndGet();
@@ -60,7 +59,7 @@ final class SystemCountersImpl implements SystemCounters {
 	@Override
 	public void reset() {
 		for (CounterType counterType : CounterType.values()) {
-			set(counterType, 0);
+			set(counterType,0);
 		}
 	}
 
