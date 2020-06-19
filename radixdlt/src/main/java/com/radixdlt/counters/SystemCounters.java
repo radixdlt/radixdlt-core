@@ -19,6 +19,7 @@ package com.radixdlt.counters;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 /**
  * System counters interface.
@@ -69,9 +70,7 @@ public interface SystemCounters {
 	 * @param counterType The counter to increment
 	 * @return The new incremented value
 	 */
-	default long increment(CounterType counterType) {
-		return counterType.counter.incrementAndGet();
-	}
+	long increment(CounterType counterType);
 
 	/**
 	 * Increments the specified counter by the specified amount,
@@ -80,9 +79,7 @@ public interface SystemCounters {
 	 * @param counterType The counter to increment
 	 * @return The new incremented value
 	 */
-	default long add(CounterType counterType, long amount) {
-		return counterType.counter.addAndGet(amount);
-	}
+	long add(CounterType counterType, long amount);
 
 	/**
 	 * Sets the specified counter to the specified value,
@@ -91,9 +88,7 @@ public interface SystemCounters {
 	 * @param counterType The counter to increment
 	 * @return The previous value
 	 */
-	default long set(CounterType counterType, long value) {
-		return counterType.counter.getAndSet(value);
-	}
+	long set(CounterType counterType, long value);
 
 	/**
 	 * Returns the current value of the specified counter.
@@ -101,9 +96,7 @@ public interface SystemCounters {
 	 * @param counterType The counter value to return
 	 * @return The current value of the counter
 	 */
-	default long get(CounterType counterType) {
-		return counterType.counter.get();
-	}
+	long get(CounterType counterType);
 
 	/**
 	 * Returns the current values as a map.
@@ -114,17 +107,27 @@ public interface SystemCounters {
 	/**
 	 * Resets <b>all</b> the counters to <b>zero</b>.
 	 */
-	default void reset() {
-		for (CounterType counterType : CounterType.values()) {
-			counterType.counter.set(0L);
-		}
+	void reset();
+
+
+	/**
+	 * Provides the system wide set of counters which should be used by the radyx platform.
+	 * @return a <b>thread safe</b> SystemCounters implementation which is backed by system wide counters.
+	 */
+	static SystemCounters getInstance() {
+		return new SystemCountersImpl(counterType -> counterType.counter,
+				System.currentTimeMillis());
 	}
 
 	/**
-	 * @return a <b>thread safe</b> object which implements this instance.
-	 * In the current implementation there is only one SystemCounters object per JVM.
+	 * Creates a brand new set of counters backed by the given supplier.
+	 * <b>This method should be used only for simulation or testing.</b>
+	 * @param supplier of counters
+	 * @return  a <b>thread safe</b> SystemCounters implementation which are <b>different</b> from
+	 * the system-wide once provided by the getInstance method.
 	 */
-	static SystemCounters getInstance() {
-		return SystemCountersImpl.INSTANCE;
+	static SystemCounters newInstance(Function<CounterType, AtomicLong> supplier) {
+		return new SystemCountersImpl(supplier,System.currentTimeMillis());
 	}
+
 }

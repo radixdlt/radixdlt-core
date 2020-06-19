@@ -19,18 +19,49 @@ package com.radixdlt.counters;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import com.google.common.collect.Maps;
 
 /**
  * Event counting utility class.
  */
-enum SystemCountersImpl implements SystemCounters {
-	INSTANCE;
+final class SystemCountersImpl implements SystemCounters {
 
 	private final String since;
+	private final Function<CounterType, AtomicLong> supplier;
 
-	SystemCountersImpl() {
-		this.since = Instant.ofEpochMilli(System.currentTimeMillis()).toString();
+	SystemCountersImpl(Function<CounterType, AtomicLong> supplier, long startTime) {
+		this.since = Instant.ofEpochMilli(startTime).toString();
+		this.supplier = supplier;
+	}
+
+
+	@Override
+	public long increment(CounterType counterType) {
+		return supplier.apply(counterType).incrementAndGet();
+	}
+
+	@Override
+	public long add(CounterType counterType, long amount) {
+		return supplier.apply(counterType).addAndGet(amount);
+	}
+
+	@Override
+	public long set(CounterType counterType, long value) {
+		return supplier.apply(counterType).getAndSet(value);
+	}
+
+	@Override
+	public long get(CounterType counterType) {
+		return supplier.apply(counterType).get();
+	}
+
+	@Override
+	public void reset() {
+		for (CounterType counterType : CounterType.values()) {
+			set(counterType,0);
+		}
 	}
 
 	@Override
@@ -63,4 +94,5 @@ enum SystemCountersImpl implements SystemCounters {
 	public String toString() {
 		return String.format("SystemCountersImpl[%s]", toMap());
 	}
+
 }
