@@ -46,6 +46,7 @@ import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -60,9 +61,12 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.CompletableSubject;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -119,7 +123,8 @@ public class SimulatedBFTNetwork {
 				.map(pk -> Validator.from(pk, UInt256.ONE))
 				.collect(Collectors.toList())
 		);
-		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> SystemCounters.getInstance()));
+		this.counters = nodes.stream()
+				.collect(ImmutableMap.toImmutableMap(e -> e, e -> SystemCounters.newInstance(new CountersMap())));
 		this.syncSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new InternalMessagePasser()));
 		this.vertexStores = nodes.stream()
 			.collect(ImmutableMap.toImmutableMap(
@@ -243,5 +248,20 @@ public class SimulatedBFTNetwork {
 
 	public int getPacemakerTimeout() {
 		return pacemakerTimeout;
+	}
+
+	private static class CountersMap implements Function<CounterType, AtomicLong>{
+		private final EnumMap<CounterType, AtomicLong> counters = new EnumMap<>(CounterType.class);
+
+		CountersMap(){
+			for (CounterType counter : CounterType.values()) {
+				counters.put(counter , new AtomicLong(0));
+			}
+		}
+
+		@Override
+		public AtomicLong apply(CounterType counterType) {
+			return counters.get(counterType);
+		}
 	}
 }
