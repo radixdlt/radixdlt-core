@@ -31,6 +31,8 @@ import com.radixdlt.consensus.VertexStore.SyncSender;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
+
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -46,6 +48,9 @@ public final class ControlledBFTNetwork {
 	private final ImmutableList<ECPublicKey> nodes;
 	private final ImmutableMap<ChannelId, LinkedList<ControlledMessage>> messageQueue;
 
+	// Only used for testing
+	private final HashMap<ECPublicKey, Integer> numberOfProposalsByNodes;
+
 	ControlledBFTNetwork(ImmutableList<ECPublicKey> nodes) {
 		this.nodes = nodes;
 		this.messageQueue = nodes.stream()
@@ -56,6 +61,14 @@ public final class ControlledBFTNetwork {
 					key -> new LinkedList<>()
 				)
 			);
+
+		this.numberOfProposalsByNodes = new HashMap<>();
+
+//		this.numberOfProposalsByNode = nodes.stream().collect(Collectors.toMap(k -> k), x -> Integer.valueOf(0));
+		for (ECPublicKey node: nodes) { // I gave up on trying to use stream,collect,toMap...
+			this.numberOfProposalsByNodes.put(node, Integer.valueOf(0));
+		}
+
 	}
 
 	static final class ChannelId {
@@ -119,8 +132,21 @@ public final class ControlledBFTNetwork {
 		}
 	}
 
+	private void putProposalMessage(ECPublicKey sender, ECPublicKey receiver, Proposal proposal) {
+		numberOfProposalsByNodes.merge(sender, 1, Integer::sum);
+		putMesssage(new ControlledMessage(sender, receiver, proposal));
+	}
+
 	private void putMesssage(ControlledMessage controlledMessage) {
 		messageQueue.get(controlledMessage.getChannelId()).add(controlledMessage);
+	}
+
+	public ImmutableList<ECPublicKey> getNodes() {
+		return nodes;
+	}
+
+	public ImmutableMap<ECPublicKey, Integer> getNumberOfProposalsByNodes() {
+		return ImmutableMap.copyOf(this.numberOfProposalsByNodes);
 	}
 
 	public List<ControlledMessage> peekNextMessages() {
@@ -190,7 +216,7 @@ public final class ControlledBFTNetwork {
 		@Override
 		public void broadcastProposal(Proposal proposal) {
 			for (ECPublicKey receiver : nodes) {
-				putMesssage(new ControlledMessage(sender, receiver, proposal));
+				putProposalMessage(sender, receiver, proposal);
 			}
 		}
 

@@ -20,6 +20,7 @@ package com.radixdlt.consensus.deterministic;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
 import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ChannelId;
 import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ControlledMessage;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
@@ -31,7 +32,9 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.UInt256;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
@@ -70,7 +73,10 @@ public class BFTDeterministicTest {
 			.map(key -> new ControlledBFTNode(
 				key,
 				network.getSender(key.getPublicKey()),
-				new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.nodeKey().euid()), 5),
+				new WeightedRotatingLeaders(
+						validatorSet,
+						Comparator.comparing(v -> v.nodeKey().euid()),
+						5),
 				validatorSet,
 				enableGetVerticesRPC,
 				syncedSupplier
@@ -95,6 +101,7 @@ public class BFTDeterministicTest {
 
 	public void processNextMsg(Random random, BiPredicate<Integer, Object> filter) {
 		List<ControlledMessage> possibleMsgs = network.peekNextMessages();
+
 		if (possibleMsgs.isEmpty()) {
 			throw new IllegalStateException("No messages available (Lost Responsiveness)");
 		}
@@ -111,4 +118,9 @@ public class BFTDeterministicTest {
 	public SystemCounters getSystemCounters(int nodeIndex) {
 		return nodes.get(nodeIndex).getSystemCounters();
 	}
+
+	public ControlledBFTNetwork getNetwork() {
+		return network;
+	}
+
 }
