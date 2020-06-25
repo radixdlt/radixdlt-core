@@ -297,12 +297,12 @@ public class SimulatedBFTNetwork {
 		}
 	}
 
-	private static class CountersMap implements Function<CounterType, AtomicLong>{
+	private static class CountersMap implements Function<CounterType, AtomicLong> {
 		private final EnumMap<CounterType, AtomicLong> counters = new EnumMap<>(CounterType.class);
 
-		CountersMap(){
+		CountersMap() {
 			for (CounterType counter : CounterType.values()) {
-				counters.put(counter , new AtomicLong(0));
+				counters.put(counter, new AtomicLong(0));
 			}
 		}
 

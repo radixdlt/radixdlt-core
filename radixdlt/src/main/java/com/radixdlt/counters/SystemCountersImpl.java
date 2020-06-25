@@ -60,7 +60,7 @@ final class SystemCountersImpl implements SystemCounters {
 	@Override
 	public void reset() {
 		for (CounterType counterType : CounterType.values()) {
-			set(counterType,0);
+			set(counterType, 0);
 		}
 	}
 
