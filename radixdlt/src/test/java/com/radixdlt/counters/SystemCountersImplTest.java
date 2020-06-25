@@ -20,7 +20,7 @@ package com.radixdlt.counters;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -30,8 +30,8 @@ import static org.junit.Assert.assertNotNull;
 
 public class SystemCountersImplTest {
 
-	@After
-	public void tearDown() {
+	@Before
+	public void setup() {
 		SystemCounters.getInstance().reset();
 	}
 
