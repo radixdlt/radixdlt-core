@@ -20,7 +20,6 @@ package com.radixdlt.consensus.deterministic;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Streams;
 import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ChannelId;
 import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ControlledMessage;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
@@ -32,9 +31,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.UInt256;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
@@ -88,18 +85,31 @@ public class BFTDeterministicTest {
 		nodes.forEach(ControlledBFTNode::start);
 	}
 
-	public void processNextMsg(int toIndex, int fromIndex, Class<?> expectedClass) {
+	/**
+	 * Returns the next message that should be processed
+	 * @return the next message that should be processed
+	 */
+	public ControlledMessage processNextMsg(int toIndex, int fromIndex, Class<?> expectedClass) {
 		ChannelId channelId = new ChannelId(pks.get(fromIndex), pks.get(toIndex));
 		Object msg = network.popNextMessage(channelId);
 		assertThat(msg).isInstanceOf(expectedClass);
 		nodes.get(toIndex).processNext(msg);
+		return new ControlledMessage(channelId.getSender(), channelId.getReceiver(), msg);
 	}
 
-	public void processNextMsg(Random random) {
-		processNextMsg(random, (c, m) -> true);
+	/**
+	 * Returns the next message that should be processed
+	 * @return the next message that should be processed
+	 */
+	public ControlledMessage processNextMsg(Random random) {
+		return processNextMsg(random, (c, m) -> true);
 	}
 
-	public void processNextMsg(Random random, BiPredicate<Integer, Object> filter) {
+	/**
+	 * Returns the next message that should be processed
+	 * @return the next message that should be processed
+	 */
+	public ControlledMessage processNextMsg(Random random, BiPredicate<Integer, Object> filter) {
 		List<ControlledMessage> possibleMsgs = network.peekNextMessages();
 
 		if (possibleMsgs.isEmpty()) {
@@ -113,6 +123,7 @@ public class BFTDeterministicTest {
 		if (filter.test(receiverIndex, msg)) {
 			nodes.get(receiverIndex).processNext(msg);
 		}
+		return new ControlledMessage(channelId.getSender(), channelId.getReceiver(), msg);
 	}
 
 	public SystemCounters getSystemCounters(int nodeIndex) {

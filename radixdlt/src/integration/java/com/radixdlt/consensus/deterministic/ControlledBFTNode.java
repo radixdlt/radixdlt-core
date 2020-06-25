@@ -41,7 +41,6 @@ import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ControlledSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
@@ -76,7 +75,7 @@ class ControlledBFTNode {
 
 	ControlledBFTNode(
 		ECKeyPair key,
-		ControlledSender sender,
+		ControlledBFTNetwork.ControlledSender sender,
 		ProposerElection proposerElection,
 		ValidatorSet validatorSet,
 		boolean enableGetVerticesRPC,
