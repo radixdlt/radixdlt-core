@@ -129,9 +129,4 @@ public class BFTDeterministicTest {
 	public SystemCounters getSystemCounters(int nodeIndex) {
 		return nodes.get(nodeIndex).getSystemCounters();
 	}
-
-	public ControlledBFTNetwork getNetwork() {
-		return network;
-	}
-
 }

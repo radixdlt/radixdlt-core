@@ -120,12 +120,8 @@ public final class ControlledBFTNetwork {
 		}
 	}
 
-	private void putMesssage(ControlledMessage controlledMessage) {
+	private void putMessage(ControlledMessage controlledMessage) {
 		messageQueue.get(controlledMessage.getChannelId()).add(controlledMessage);
-	}
-
-	public ImmutableList<ECPublicKey> getNodes() {
-		return nodes;
 	}
 
 	public List<ControlledMessage> peekNextMessages() {
@@ -177,40 +173,40 @@ public final class ControlledBFTNetwork {
 
 		@Override
 		public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
-			putMesssage(new ControlledMessage(sender, node, new ControlledGetVerticesRequest(id, count, sender, opaque)));
+			putMessage(new ControlledMessage(sender, node, new ControlledGetVerticesRequest(id, count, sender, opaque)));
 		}
 
 		@Override
 		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
 			ControlledGetVerticesRequest request = (ControlledGetVerticesRequest) originalRequest;
 			GetVerticesResponse response = new GetVerticesResponse(request.getVertexId(), vertices, request.opaque);
-			putMesssage(new ControlledMessage(sender, request.requestor, response));
+			putMessage(new ControlledMessage(sender, request.requestor, response));
 		}
 
 		@Override
 		public void synced(Hash vertexId) {
-			putMesssage(new ControlledMessage(sender, sender, vertexId));
+			putMessage(new ControlledMessage(sender, sender, vertexId));
 		}
 
 		@Override
 		public void broadcastProposal(Proposal proposal) {
 			for (ECPublicKey receiver : nodes) {
-				putMesssage(new ControlledMessage(sender, receiver, proposal));
+				putMessage(new ControlledMessage(sender, receiver, proposal));
 			}
 		}
 
 		@Override
 		public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
-			putMesssage(new ControlledMessage(sender, newViewLeader, newView));
+			putMessage(new ControlledMessage(sender, newViewLeader, newView));
 		}
 
 		@Override
 		public void sendVote(Vote vote, ECPublicKey leader) {
-			putMesssage(new ControlledMessage(sender, leader, vote));
+			putMessage(new ControlledMessage(sender, leader, vote));
 		}
 
 		public void committedStateSync(CommittedStateSync committedStateSync) {
-			putMesssage(new ControlledMessage(sender, sender, committedStateSync));
+			putMessage(new ControlledMessage(sender, sender, committedStateSync));
 		}
 	}
 }
