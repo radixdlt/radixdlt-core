@@ -97,7 +97,7 @@ public final class ControlledBFTNetwork {
 		}
 	}
 
-	public static final class ControlledMessage {
+	static final class ControlledMessage {
 		private final ChannelId channelId;
 		private final Object msg;
 

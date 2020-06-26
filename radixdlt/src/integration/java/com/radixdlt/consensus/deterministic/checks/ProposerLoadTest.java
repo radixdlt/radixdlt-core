@@ -19,8 +19,6 @@ package com.radixdlt.consensus.deterministic.checks;
 
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.deterministic.BFTDeterministicTest;
-import com.radixdlt.consensus.deterministic.ControlledBFTNetwork;
-import com.radixdlt.crypto.ECPublicKey;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -51,14 +49,14 @@ public class ProposerLoadTest {
 		final BFTDeterministicTest test = new BFTDeterministicTest(nodeCount, false);
 
 		test.start();
-		HashMap<ECPublicKey, Integer> numberOfProposalsByNodes = new HashMap<>();
+		HashMap<Integer, Integer> numberOfProposalsByNodes = new HashMap<>();
 		int turn = 0;
 		int round = 0;
 		for (int step = 0; step < 10_000; step++) {
-			ControlledBFTNetwork.ControlledMessage message = test.processNextMsg(random);
-		 	if (message.getMsg() instanceof Proposal) {
-				ECPublicKey sender = message.getChannelId().getSender();
-				numberOfProposalsByNodes.merge(sender, 1, Integer::sum);
+			BFTDeterministicTest.ProcessedMessage message = test.processNextMsg(random);
+		 	if (message.getMessage() instanceof Proposal) {
+				int nodeIndexOfSender = message.getNodeIndexOfSender();
+				numberOfProposalsByNodes.merge(nodeIndexOfSender, 1, Integer::sum);
 
 				turn++;
 
@@ -66,17 +64,16 @@ public class ProposerLoadTest {
 					turn = 0;
 					round++;
 
-					int x = 10; // arbitrarily chosen, sorry 🤷‍♂️
-					// Check every `nodeCount*X`th (arbitrarily chosen) round
-					if (round % (nodeCount * x) == 0) {
+					if (round % nodeCount == 0) {
 						System.out.println(String.format("round: %d, step: %d", round, step));
-						assertMaxValueDiff(numberOfProposalsByNodes, sender, 1);
+						assertMaxValueDiff(numberOfProposalsByNodes, nodeIndexOfSender, 2);
 					}
 				}
 
 			}
 		}
 		//noinspection OptionalGetWithoutIsPresent
-		assertMaxValueDiff(numberOfProposalsByNodes, numberOfProposalsByNodes.keySet().stream().findFirst().get(), nodeCount); // `nodeCount` is arbitrarily chosen...
+		int expectedMaxDiff = nodeCount; // `nodeCount` is arbitrarily chosen...
+		assertMaxValueDiff(numberOfProposalsByNodes, 0, expectedMaxDiff);
 	}
 }

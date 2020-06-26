@@ -53,6 +53,23 @@ public class BFTDeterministicTest {
 		});
 	}
 
+	public static final class ProcessedMessage {
+		private Object message;
+		private int nodeIndexOfSender;
+		ProcessedMessage(Object message, int nodeIndexOfSender) {
+			this.message = message;
+			this.nodeIndexOfSender = nodeIndexOfSender;
+		}
+
+		public Object getMessage() {
+			return message;
+		}
+
+		public int getNodeIndexOfSender() {
+			return nodeIndexOfSender;
+		}
+	}
+
 	public BFTDeterministicTest(int numNodes, boolean enableGetVerticesRPC, BooleanSupplier syncedSupplier) {
 		ImmutableList<ECKeyPair> keys = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
@@ -89,19 +106,19 @@ public class BFTDeterministicTest {
 	 * Returns the next message that should be processed
 	 * @return the next message that should be processed
 	 */
-	public ControlledMessage processNextMsg(int toIndex, int fromIndex, Class<?> expectedClass) {
+	public ProcessedMessage processNextMsg(int toIndex, int fromIndex, Class<?> expectedClass) {
 		ChannelId channelId = new ChannelId(pks.get(fromIndex), pks.get(toIndex));
 		Object msg = network.popNextMessage(channelId);
 		assertThat(msg).isInstanceOf(expectedClass);
 		nodes.get(toIndex).processNext(msg);
-		return new ControlledMessage(channelId.getSender(), channelId.getReceiver(), msg);
+		return new ProcessedMessage(msg, fromIndex);
 	}
 
 	/**
 	 * Returns the next message that should be processed
 	 * @return the next message that should be processed
 	 */
-	public ControlledMessage processNextMsg(Random random) {
+	public ProcessedMessage processNextMsg(Random random) {
 		return processNextMsg(random, (c, m) -> true);
 	}
 
@@ -109,7 +126,7 @@ public class BFTDeterministicTest {
 	 * Returns the next message that should be processed
 	 * @return the next message that should be processed
 	 */
-	public ControlledMessage processNextMsg(Random random, BiPredicate<Integer, Object> filter) {
+	public ProcessedMessage processNextMsg(Random random, BiPredicate<Integer, Object> filter) {
 		List<ControlledMessage> possibleMsgs = network.peekNextMessages();
 
 		if (possibleMsgs.isEmpty()) {
@@ -123,7 +140,8 @@ public class BFTDeterministicTest {
 		if (filter.test(receiverIndex, msg)) {
 			nodes.get(receiverIndex).processNext(msg);
 		}
-		return new ControlledMessage(channelId.getSender(), channelId.getReceiver(), msg);
+		int senderIndex = pks.indexOf(channelId.getSender());
+		return new ProcessedMessage(msg, senderIndex);
 	}
 
 	public SystemCounters getSystemCounters(int nodeIndex) {
