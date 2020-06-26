@@ -45,21 +45,38 @@ public class ProposerLoadTest {
 	}
 
 	@Test
-	public void when_run_4_correct_nodes_with_channel_order_and_timeouts_disabled__then_proposal_load_should_be_completely_uniform() {
+	public void when_run_4_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_proposal_load_should_be_approx_uniform() {
 		final Random random = new Random(12345);
 		int nodeCount = 4;
 		final BFTDeterministicTest test = new BFTDeterministicTest(nodeCount, false);
 
 		test.start();
 		HashMap<ECPublicKey, Integer> numberOfProposalsByNodes = new HashMap<>();
-		int stepCount = 10_000;
-		for (int step = 0; step < stepCount; step++) {
+		int turn = 0;
+		int round = 0;
+		for (int step = 0; step < 10_000; step++) {
 			ControlledBFTNetwork.ControlledMessage message = test.processNextMsg(random);
 		 	if (message.getMsg() instanceof Proposal) {
 				ECPublicKey sender = message.getChannelId().getSender();
 				numberOfProposalsByNodes.merge(sender, 1, Integer::sum);
-				assertMaxValueDiff(numberOfProposalsByNodes, sender, 6);
+
+				turn++;
+
+				if (turn >= nodeCount) {
+					turn = 0;
+					round++;
+
+					int x = 10; // arbitrarily chosen, sorry 🤷‍♂️
+					// Check every `nodeCount*X`th (arbitrarily chosen) round
+					if (round % (nodeCount * x) == 0) {
+						System.out.println(String.format("round: %d, step: %d", round, step));
+						assertMaxValueDiff(numberOfProposalsByNodes, sender, 1);
+					}
+				}
+
 			}
 		}
+		//noinspection OptionalGetWithoutIsPresent
+		assertMaxValueDiff(numberOfProposalsByNodes, numberOfProposalsByNodes.keySet().stream().findFirst().get(), nodeCount); // `nodeCount` is arbitrarily chosen...
 	}
 }
