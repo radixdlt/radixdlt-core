@@ -44,9 +44,9 @@ public final class Vote implements ConsensusEvent {
 
 	private final ECPublicKey author;
 
-	@JsonProperty("vertex_metadata")
+	@JsonProperty("vote_data")
 	@DsonOutput(Output.ALL)
-	private final VoteData voteData;
+	private final TimestampedVoteData voteData;
 
 	@JsonProperty("signature")
 	@DsonOutput(Output.ALL)
@@ -55,13 +55,13 @@ public final class Vote implements ConsensusEvent {
 	@JsonCreator
 	Vote(
 		@JsonProperty("author") byte[] author,
-		@JsonProperty("vertex_metadata") VoteData voteData,
+		@JsonProperty("vote_data") TimestampedVoteData voteData,
 		@JsonProperty("signature") ECDSASignature signature
 	) throws CryptoException {
 		this(new ECPublicKey(author), voteData, signature);
 	}
 
-	public Vote(ECPublicKey author, VoteData voteData, ECDSASignature signature) {
+	public Vote(ECPublicKey author, TimestampedVoteData voteData, ECDSASignature signature) {
 		this.author = Objects.requireNonNull(author);
 		this.voteData = Objects.requireNonNull(voteData);
 		this.signature = signature;
@@ -69,7 +69,7 @@ public final class Vote implements ConsensusEvent {
 
 	@Override
 	public long getEpoch() {
-		return voteData.getProposed().getEpoch();
+		return voteData.getVoteData().getProposed().getEpoch();
 	}
 
 	@Override
@@ -77,7 +77,7 @@ public final class Vote implements ConsensusEvent {
 		return author;
 	}
 
-	public VoteData getVoteData() {
+	public TimestampedVoteData getTimestampedVoteData() {
 		return voteData;
 	}
 
@@ -93,8 +93,9 @@ public final class Vote implements ConsensusEvent {
 
 	@Override
 	public String toString() {
-		return String.format("%s{epoch=%s view=%s author=%s}", getClass().getSimpleName(),
-			this.getEpoch(), voteData.getProposed().getView(), author.euid().toString().substring(0, 6));
+		View view = voteData.getVoteData() == null ? null : voteData.getVoteData().getProposed().getView();
+		return String.format("%s{epoch=%s view=%s author=%s }", getClass().getSimpleName(),
+				this.getEpoch(), view, author.euid().toString().substring(0, 6));
 	}
 
 	@Override

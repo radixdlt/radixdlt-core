@@ -66,7 +66,7 @@ public class PendingVotesTest {
 		VoteData voteData = mock(VoteData.class);
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		when(validatorSet.containsKey(any())).thenReturn(true);
-		VertexMetadata proposed = voteWithoutSignature.getVoteData().getProposed();
+		VertexMetadata proposed = voteWithoutSignature.getTimestampedVoteData().getVoteData().getProposed();
 		when(voteData.getProposed()).thenReturn(proposed);
 
 		assertThatThrownBy(() -> pendingVotes.insertVote(voteWithoutSignature, validatorSet))
@@ -81,7 +81,7 @@ public class PendingVotesTest {
 
 		ValidatorSet validatorSet = ValidatorSet.from(Collections.singleton(Validator.from(vote1.getAuthor(), UInt256.ONE)));
 		VoteData voteData = mock(VoteData.class);
-		VertexMetadata proposed = vote1.getVoteData().getProposed();
+		VertexMetadata proposed = vote1.getTimestampedVoteData().getVoteData().getProposed();
 		when(voteData.getProposed()).thenReturn(proposed);
 
 		assertThat(this.pendingVotes.insertVote(vote2, validatorSet)).isEmpty();
@@ -103,7 +103,7 @@ public class PendingVotesTest {
 		when(validatorSet.containsKey(any())).thenReturn(true);
 
 		VoteData voteData = mock(VoteData.class);
-		VertexMetadata proposed = vote.getVoteData().getProposed();
+		VertexMetadata proposed = vote.getTimestampedVoteData().getVoteData().getProposed();
 		when(voteData.getProposed()).thenReturn(proposed);
 
 		assertThat(this.pendingVotes.insertVote(vote, validatorSet)).isPresent();
@@ -124,7 +124,7 @@ public class PendingVotesTest {
 		when(validatorSet.containsKey(any())).thenReturn(true);
 
 		VoteData voteData = mock(VoteData.class);
-		VertexMetadata proposed = vote.getVoteData().getProposed();
+		VertexMetadata proposed = vote.getTimestampedVoteData().getVoteData().getProposed();
 		when(voteData.getProposed()).thenReturn(proposed);
 
 		// Preconditions
@@ -134,7 +134,7 @@ public class PendingVotesTest {
 
 		Vote vote2 = makeSignedVoteFor(author, View.of(1), Hash.random());
 		// Need a different hash for this (different) vote
-		when(hasher.hash(eq(vote2.getVoteData()))).thenReturn(Hash.random());
+		when(hasher.hash(eq(vote2.getTimestampedVoteData()))).thenReturn(Hash.random());
 		assertThat(this.pendingVotes.insertVote(vote2, validatorSet)).isNotPresent();
 		assertEquals(1, this.pendingVotes.voteStateSize());
 		assertEquals(1, this.pendingVotes.previousVotesSize());
@@ -157,7 +157,8 @@ public class PendingVotesTest {
 		VertexMetadata proposed = new VertexMetadata(0, parentView.next(), vertexId, 1, false);
 		VertexMetadata parent = new VertexMetadata(0, parentView, Hash.random(), 0, false);
 		VoteData voteData = new VoteData(proposed, parent, null);
-		when(vote.getVoteData()).thenReturn(voteData);
+		TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, System.currentTimeMillis());
+		when(vote.getTimestampedVoteData()).thenReturn(timestampedVoteData);
 		when(vote.getAuthor()).thenReturn(author);
 		return vote;
 	}

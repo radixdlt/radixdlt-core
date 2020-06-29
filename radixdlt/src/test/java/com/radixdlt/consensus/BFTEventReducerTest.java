@@ -153,7 +153,8 @@ public class BFTEventReducerTest {
 		VertexMetadata proposal = new VertexMetadata(0, View.of(2), Hash.random(), 2, false);
 		VertexMetadata parent = new VertexMetadata(0, View.of(1), Hash.random(), 1, false);
 		VoteData voteData = new VoteData(proposal, parent, null);
-		when(voteMessage.getVoteData()).thenReturn(voteData);
+		TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, System.currentTimeMillis());
+		when(voteMessage.getTimestampedVoteData()).thenReturn(timestampedVoteData);
 
 		reducer.processVote(voteMessage);
 		verify(safetyRules, times(0)).process(any(QuorumCertificate.class));
@@ -168,7 +169,8 @@ public class BFTEventReducerTest {
 		VertexMetadata proposal = new VertexMetadata(0, View.of(2), Hash.random(), 2, false);
 		VertexMetadata parent = new VertexMetadata(0, View.of(1), Hash.random(), 1, false);
 		VoteData voteData = new VoteData(proposal, parent, null);
-		when(vote.getVoteData()).thenReturn(voteData);
+		TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, System.currentTimeMillis());
+		when(vote.getTimestampedVoteData()).thenReturn(timestampedVoteData);
 
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		View view = mock(View.class);

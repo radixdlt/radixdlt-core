@@ -50,7 +50,7 @@ public class SafetyRulesTest {
 	@Before
 	public void setup() {
 		this.safetyState = mock(SafetyState.class);
-		this.safetyRules = new SafetyRules(ECKeyPair.generateNew(), safetyState, new DefaultHasher(), ECKeyPair::sign);
+		this.safetyRules = new SafetyRules(ECKeyPair.generateNew(), safetyState, new DefaultHasher(), ECKeyPair::sign, System::currentTimeMillis);
 	}
 
 	@Test
@@ -86,9 +86,9 @@ public class SafetyRulesTest {
 		Vertex vertex = Vertex.createVertex(GENESIS_QC, View.of(1), null);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		Vote vote = safetyRules.voteFor(vertex, vertexMetadata);
-		assertThat(vote.getVoteData().getProposed()).isEqualTo(vertexMetadata);
-		assertThat(vote.getVoteData().getParent()).isEqualTo(vertex.getQC().getProposed());
-		assertThat(vote.getVoteData().getCommitted()).isEmpty();
+		assertThat(vote.getTimestampedVoteData().getVoteData().getProposed()).isEqualTo(vertexMetadata);
+		assertThat(vote.getTimestampedVoteData().getVoteData().getParent()).isEqualTo(vertex.getQC().getProposed());
+		assertThat(vote.getTimestampedVoteData().getVoteData().getCommitted()).isEmpty();
 	}
 
 	@Test
@@ -101,7 +101,7 @@ public class SafetyRulesTest {
 		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
 		Vertex proposal = Vertex.createVertex(qc, View.of(2), null);
 		Vote vote = safetyRules.voteFor(proposal, mock(VertexMetadata.class));
-		assertThat(vote.getVoteData().getCommitted()).isEmpty();
+		assertThat(vote.getTimestampedVoteData().getVoteData().getCommitted()).isEmpty();
 	}
 
 	@Test
@@ -121,7 +121,7 @@ public class SafetyRulesTest {
 		Vertex proposal = Vertex.createVertex(parentQC, View.of(3), null);
 
 		Vote vote = safetyRules.voteFor(proposal, mock(VertexMetadata.class));
-		assertThat(vote.getVoteData().getCommitted()).hasValue(VertexMetadata.ofVertex(grandParent, false));
+		assertThat(vote.getTimestampedVoteData().getVoteData().getCommitted()).hasValue(VertexMetadata.ofVertex(grandParent, false));
 	}
 
 	@Test
@@ -141,7 +141,7 @@ public class SafetyRulesTest {
 		Vertex proposal = Vertex.createVertex(parentQC, View.of(4), null);
 
 		Vote vote = safetyRules.voteFor(proposal, mock(VertexMetadata.class));
-		assertThat(vote.getVoteData().getCommitted()).isEmpty();
+		assertThat(vote.getTimestampedVoteData().getVoteData().getCommitted()).isEmpty();
 	}
 
 	@Test

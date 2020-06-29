@@ -99,7 +99,7 @@ public class VertexStoreTest {
 			}
 
 			final View view;
-			if (skipOne) {
+			if (skipOne.booleanValue()) {
 				view = parentVertex.getView().next().next();
 			} else {
 				view = parentVertex.getView().next();
@@ -128,11 +128,11 @@ public class VertexStoreTest {
 
 	@Test
 	public void when_vertex_store_created_with_correct_vertices__then_exception_is_not_thrown() {
-		Vertex nextVertex = this.nextVertex.get();
+		Vertex vertex = this.nextVertex.get();
 		this.vertexStore = new VertexStore(
 			genesisVertex,
 			rootQC,
-			Collections.singletonList(nextVertex),
+			Collections.singletonList(vertex),
 			syncedStateComputer,
 			syncVerticesRPCSender, vertexStoreEventSender,
 			counters
@@ -187,8 +187,8 @@ public class VertexStoreTest {
 		VertexMetadata vertexMetadata = VertexMetadata.ofGenesisAncestor();
 		VoteData voteData = new VoteData(vertexMetadata, null, null);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
-		Vertex nextVertex = Vertex.createVertex(qc, View.of(1), mock(ClientAtom.class));
-		assertThatThrownBy(() -> vertexStore.insertVertex(nextVertex))
+		Vertex vertex = Vertex.createVertex(qc, View.of(1), mock(ClientAtom.class));
+		assertThatThrownBy(() -> vertexStore.insertVertex(vertex))
 			.isInstanceOf(MissingParentException.class);
 	}
 
@@ -230,8 +230,8 @@ public class VertexStoreTest {
 	@Test
 	public void when_insert_vertex__then_it_should_not_be_committed_or_stored_in_engine()
 		throws VertexInsertionException {
-		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
-		vertexStore.insertVertex(nextVertex);
+		Vertex vertex = Vertex.createVertex(rootQC, View.of(1), null);
+		vertexStore.insertVertex(vertex);
 
 		verify(vertexStoreEventSender, never()).sendCommittedVertex(any());
 		verify(syncedStateComputer, times(0)).execute(any()); // not stored
@@ -254,7 +254,8 @@ public class VertexStoreTest {
 	}
 
 	@Test
-	public void when_insert_two_vertices__then_get_path_from_root_should_return_the_two_vertices() throws Exception {
+	public void when_insert_two_vertices__then_get_path_from_root_should_return_the_two_vertices()
+		throws VertexInsertionException {
 		Vertex nextVertex0 = nextVertex.get();
 		Vertex nextVertex1 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex0);
@@ -265,7 +266,7 @@ public class VertexStoreTest {
 
 	@Test
 	public void when_insert_and_commit_vertex__then_committed_vertex_should_emit_and_store_should_have_size_1()
-		throws Exception {
+		throws VertexInsertionException {
 		Vertex vertex = nextVertex.get();
 		vertexStore.insertVertex(vertex);
 
@@ -297,7 +298,7 @@ public class VertexStoreTest {
 
 	@Test
 	public void when_insert_two_and_commit_vertex__then_two_committed_vertices_should_emit_in_order_and_store_should_have_size_1()
-		throws Exception {
+		throws VertexInsertionException {
 		Vertex nextVertex1 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex1);
 

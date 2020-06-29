@@ -21,6 +21,7 @@ import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
@@ -30,6 +31,7 @@ import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.network.TimeSupplier;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -41,19 +43,21 @@ public final class SafetyRules {
 	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
 	private final Hasher hasher;
 	private final HashSigner signer;
-
+	private final TimeSupplier timeSupplier;
 	private SafetyState state;
 
 	public SafetyRules(
 		ECKeyPair selfKey,
 		SafetyState initialState,
 		Hasher hasher,
-		HashSigner signer
+		HashSigner signer,
+		TimeSupplier timeSupplier
 	) {
 		this.selfKey = Objects.requireNonNull(selfKey);
 		this.state = Objects.requireNonNull(initialState);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.signer = Objects.requireNonNull(signer);
+		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 	}
 
 	/**
@@ -148,13 +152,14 @@ public final class SafetyRules {
 		safetyStateBuilder.lastVotedView(proposedVertex.getView());
 
 		final VoteData voteData = constructVoteData(proposedVertex, proposedVertexMetadata);
+		final TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, this.timeSupplier.currentTime());
 
-		final Hash voteHash = hasher.hash(voteData);
+		final Hash voteHash = hasher.hash(timestampedVoteData);
 
 		this.state = safetyStateBuilder.build();
 
 		// TODO make signing more robust by including author in signed hash
 		ECDSASignature signature = this.signer.sign(this.selfKey, voteHash);
-		return new Vote(selfKey.getPublicKey(), voteData, signature);
+		return new Vote(selfKey.getPublicKey(), timestampedVoteData, signature);
 	}
 }

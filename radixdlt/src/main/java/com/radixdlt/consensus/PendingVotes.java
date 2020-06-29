@@ -93,31 +93,38 @@ public final class PendingVotes {
 	 * @return The generated QC, if any
 	 */
 	public Optional<QuorumCertificate> insertVote(Vote vote, ValidatorSet validatorSet) {
+		// Only process for valid validators
 		final ECPublicKey voteAuthor = vote.getAuthor();
-		final VoteData voteData = vote.getVoteData();
-		final Hash voteHash = this.hasher.hash(voteData);
-		final ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
-		// Only process for valid validators and signatures
-		if (validatorSet.containsKey(voteAuthor)) {
-			if (this.verifier.verify(voteAuthor, voteHash, signature)) {
-				final View voteView = voteData.getProposed().getView();
-				if (replacePreviousVote(voteAuthor, voteView, voteHash)) {
-					// If there is no equivocation or duplication, we process the vote.
-					ValidationState validationState = this.voteState.computeIfAbsent(voteHash, k -> validatorSet.newValidationState());
-
-					// try to form a QC with the added signature according to the requirements
-					if (validationState.addSignature(voteAuthor, signature) && validationState.complete()) {
-						// QC can be formed, so return it
-						QuorumCertificate qc = new QuorumCertificate(vote.getVoteData(), validationState.signatures());
-						return Optional.of(qc);
-					}
-				}
-			} else {
-				log.info("Ignoring invalid signature from author {}", () -> hostId(voteAuthor));
-			}
-		} else {
+		if (!validatorSet.containsKey(voteAuthor)) {
 			log.info("Ignoring vote from invalid author {}", () -> hostId(voteAuthor));
+			return Optional.empty();
 		}
+
+		// Only process for valid signatures
+		final ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
+		final TimestampedVoteData timestampedVoteData = vote.getTimestampedVoteData();
+		final Hash timestampedVoteHash = this.hasher.hash(timestampedVoteData);
+		if (!this.verifier.verify(voteAuthor, timestampedVoteHash, signature)) {
+			log.info("Ignoring invalid signature from author {}", () -> hostId(voteAuthor));
+			return Optional.empty();
+		}
+
+		final VoteData voteData = timestampedVoteData.getVoteData();
+		final View voteView = voteData.getProposed().getView();
+		final Hash voteHash = this.hasher.hash(voteData);
+		if (replacePreviousVote(voteAuthor, voteView, voteHash)) {
+			// If there is no equivocation or duplication, we process the vote.
+			ValidationState validationState = this.voteState.computeIfAbsent(voteHash, k -> validatorSet.newValidationState());
+
+			// try to form a QC with the added signature according to the requirements
+			if (validationState.addSignature(voteAuthor, signature) && validationState.complete()) {
+				// QC can be formed, so return it
+				// TODO: Include timestamps with signatures
+				QuorumCertificate qc = new QuorumCertificate(voteData, validationState.signatures());
+				return Optional.of(qc);
+			}
+		}
+
 		// No QC could be formed, so return nothing
 		return Optional.empty();
 	}

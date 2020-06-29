@@ -80,6 +80,7 @@ public class EpochManagerTest {
 		this.bftFactory = mock(BFTFactory.class);
 
 		this.systemCounters = new SystemCountersImpl();
+		// No issues with type checking with this mock.
 		@SuppressWarnings("unchecked")
 		SyncedStateComputer<CommittedAtom> ssc = mock(SyncedStateComputer.class);
 		this.syncedStateComputer = ssc;
@@ -258,11 +259,13 @@ public class EpochManagerTest {
 		when(pacemaker.getCurrentView()).thenReturn(View.of(0));
 
 		Vote vote = mock(Vote.class);
+		TimestampedVoteData timestampedVoteData = mock(TimestampedVoteData.class);
 		VoteData voteData = mock(VoteData.class);
 		VertexMetadata proposed = mock(VertexMetadata.class);
 		when(proposed.getView()).thenReturn(View.of(1));
 		when(voteData.getProposed()).thenReturn(proposed);
-		when(vote.getVoteData()).thenReturn(voteData);
+		when(vote.getTimestampedVoteData()).thenReturn(timestampedVoteData);
+		when(timestampedVoteData.getVoteData()).thenReturn(voteData);
 		when(vote.getAuthor()).thenReturn(key);
 		when(vote.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
 		epochManager.processConsensusEvent(vote);

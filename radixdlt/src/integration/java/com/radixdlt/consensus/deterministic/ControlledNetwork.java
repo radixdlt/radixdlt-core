@@ -252,7 +252,7 @@ public final class ControlledNetwork {
 
 		@Override
 		public void sendVote(Vote vote, ECPublicKey leader) {
-			putMessage(messageRank(vote.getVoteData().getProposed(), 0), new ControlledMessage(sender, leader, vote));
+			putMessage(messageRank(vote.getTimestampedVoteData().getVoteData().getProposed(), 0), new ControlledMessage(sender, leader, vote));
 		}
 
 		@Override

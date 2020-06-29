@@ -116,14 +116,15 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		log.trace("{}: VOTE: PreProcessing {}", this.getShortName(), vote);
 
 		// only do something if we're actually the leader for the vote
-		final View view = vote.getVoteData().getProposed().getView();
+		final VoteData voteData = vote.getTimestampedVoteData().getVoteData();
+		final View view = voteData.getProposed().getView();
 		// TODO: currently we don't check view of vote relative to our pacemakerState. This opens
 		// TODO: up to dos attacks on calculation of next proposer if ProposerElection is
 		// TODO: an expensive operation. Need to figure out a way of mitigating this problem
 		// TODO: perhaps through filter views too out of bounds
 		if (!Objects.equals(proposerElection.getProposer(view), myKey)) {
 			log.warn("{}: VOTE: Ignoring confused vote {} for {}",
-				getShortName(), vote.hashCode(), vote.getVoteData().getProposed().getView());
+				getShortName(), vote.hashCode(), voteData.getProposed().getView());
 			return;
 		}
 

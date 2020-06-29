@@ -107,10 +107,12 @@ public class BFTEventPreprocessorTest {
 	public void when_process_vote_as_not_proposer__then_vote_gets_thrown_away() {
 		Vote vote = mock(Vote.class);
 		VoteData voteData = mock(VoteData.class);
+		TimestampedVoteData timestampedVoteData = mock(TimestampedVoteData.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).thenReturn(View.of(1));
 		when(voteData.getProposed()).thenReturn(vertexMetadata);
-		when(vote.getVoteData()).thenReturn(voteData);
+		when(timestampedVoteData.getVoteData()).thenReturn(voteData);
+		when(vote.getTimestampedVoteData()).thenReturn(timestampedVoteData);
 		when(proposerElection.getProposer(eq(View.of(1)))).thenReturn(mock(ECPublicKey.class));
 		preprocessor.processVote(vote);
 		verify(forwardTo, never()).processVote(vote);
@@ -120,10 +122,12 @@ public class BFTEventPreprocessorTest {
 	public void when_process_vote__event_gets_forwarded() {
 		Vote vote = mock(Vote.class);
 		VoteData voteData = mock(VoteData.class);
+		TimestampedVoteData timestampedVoteData = mock(TimestampedVoteData.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).thenReturn(View.of(1));
 		when(voteData.getProposed()).thenReturn(vertexMetadata);
-		when(vote.getVoteData()).thenReturn(voteData);
+		when(timestampedVoteData.getVoteData()).thenReturn(voteData);
+		when(vote.getTimestampedVoteData()).thenReturn(timestampedVoteData);
 		preprocessor.processVote(vote);
 		verify(forwardTo, times(1)).processVote(vote);
 	}

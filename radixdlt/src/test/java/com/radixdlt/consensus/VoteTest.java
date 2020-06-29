@@ -29,12 +29,13 @@ import static org.junit.Assert.assertEquals;
 public class VoteTest {
 	public static final RadixAddress ADDRESS = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 	private Vote testObject;
-	private VoteData voteData;
+	private TimestampedVoteData voteData;
 
 	@Before
 	public void setUp() {
 		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), 1, false);
-		this.voteData = new VoteData(VertexMetadata.ofGenesisAncestor(), parent, null);
+		VoteData data = new VoteData(VertexMetadata.ofGenesisAncestor(), parent, null);
+		this.voteData = new TimestampedVoteData(data, System.currentTimeMillis());
 
 		this.testObject = new Vote(ADDRESS.getPublicKey(), voteData, null);
 	}
@@ -47,8 +48,8 @@ public class VoteTest {
 
 	@Test
 	public void testGetters() {
-		assertEquals(this.testObject.getEpoch(), voteData.getProposed().getEpoch());
-		assertEquals(this.voteData, this.testObject.getVoteData());
+		assertEquals(this.testObject.getEpoch(), voteData.getVoteData().getProposed().getEpoch());
+		assertEquals(this.voteData, this.testObject.getTimestampedVoteData());
 		assertEquals(ADDRESS.getPublicKey(), this.testObject.getAuthor());
 	}
 

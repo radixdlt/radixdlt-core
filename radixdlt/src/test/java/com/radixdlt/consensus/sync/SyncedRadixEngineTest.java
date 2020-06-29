@@ -83,7 +83,8 @@ public class SyncedRadixEngineTest {
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
 		this.committedStateSyncSender = mock(CommittedStateSyncSender.class);
 		this.epochChangeSender = mock(EpochChangeSender.class);
-		// No issues with type checking for mock
+
+		// No type check issues with mocking generic here
 		@SuppressWarnings("unchecked")
 		Function<Long, ValidatorSet> vsm = mock(Function.class);
 		this.validatorSetMapping = vsm;

@@ -39,6 +39,7 @@ import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.InternalMessagePasser;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
@@ -69,6 +70,7 @@ import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
+import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.utils.ThreadFactories;
@@ -86,8 +88,9 @@ public class CerberusModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		// Signing
+		// Signing/verifying
 		bind(HashSigner.class).toInstance(ECKeyPair::sign);
+		bind(HashVerifier.class).toInstance(ECPublicKey::verify);
 
 		// Timed local messages
 		bind(PacemakerRx.class).to(ScheduledLocalTimeoutSender.class);
@@ -127,7 +130,9 @@ public class CerberusModule extends AbstractModule {
 		@Named("self") ECKeyPair selfKey,
 		Hasher hasher,
 		HashSigner signer,
-		SystemCounters counters
+		HashVerifier verifier,
+		SystemCounters counters,
+		TimeSupplier timeSupplier
 	) {
 		return (
 			endOfEpochSender,
@@ -137,8 +142,8 @@ public class CerberusModule extends AbstractModule {
 			validatorSet
 		) -> {
 			final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
-			final SafetyRules safetyRules = new SafetyRules(selfKey, SafetyState.initialState(), hasher, signer);
-			final PendingVotes pendingVotes = new PendingVotes(hasher, ECPublicKey::verify);
+			final SafetyRules safetyRules = new SafetyRules(selfKey, SafetyState.initialState(), hasher, signer, timeSupplier);
+			final PendingVotes pendingVotes = new PendingVotes(hasher, verifier);
 
 			return new BFTEventReducer(
 				proposalGenerator,
