@@ -30,9 +30,9 @@ public class VoteDataSerializeTest extends SerializeObject<VoteData> {
 	private static VoteData get() {
 		View view = View.of(1234567890L);
 
-		VertexMetadata committed = new VertexMetadata(view, Hash.random(), 0);
-		VertexMetadata parent = new VertexMetadata(view.next(), Hash.random(), 1);
-		VertexMetadata proposed = new VertexMetadata(view.next().next(), Hash.random(), 2);
+		VertexMetadata committed = new VertexMetadata(0, view, Hash.random(), 0, false);
+		VertexMetadata parent = new VertexMetadata(0, view.next(), Hash.random(), 1, false);
+		VertexMetadata proposed = new VertexMetadata(0, view.next().next(), Hash.random(), 2, false);
 		return new VoteData(proposed, parent, committed);
 	}
 }

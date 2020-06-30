@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.validators;
 
 import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.utils.UInt256;
 import java.util.Collection;
@@ -87,6 +88,10 @@ public final class ValidatorSet {
 
 	public ImmutableSet<Validator> getValidators() {
 		return validators.values();
+	}
+
+	public ImmutableMap<ECPublicKey, Validator> validatorsByKey() {
+		return validators;
 	}
 
 	@Override

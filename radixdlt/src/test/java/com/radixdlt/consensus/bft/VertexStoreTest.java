@@ -36,6 +36,7 @@ import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexInsertionException;
 import com.radixdlt.consensus.VertexMetadata;
@@ -44,7 +45,6 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.ClientAtom;
@@ -75,7 +75,7 @@ public class VertexStoreTest {
 		this.genesisVertex = Vertex.createGenesis();
 		this.genesisVertexMetadata = VertexMetadata.ofVertex(genesisVertex, false);
 		VoteData voteData = new VoteData(genesisVertexMetadata, genesisVertexMetadata, genesisVertexMetadata);
-		this.rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
+		this.rootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		// No type check issues with mocking generic here
 		@SuppressWarnings("unchecked")
 		SyncedStateComputer<CommittedAtom> ssc = mock(SyncedStateComputer.class);
@@ -93,7 +93,7 @@ public class VertexStoreTest {
 			if (!parentVertex.getView().equals(View.genesis())) {
 				VertexMetadata parent = VertexMetadata.ofVertex(parentVertex, false);
 				VoteData data = new VoteData(parent, parentVertex.getQC().getProposed(), skipOne ? null : parentVertex.getQC().getParent());
-				qc = new QuorumCertificate(data, new ECDSASignatures());
+				qc = new QuorumCertificate(data, new TimestampedECDSASignatures());
 			} else {
 				qc = rootQC;
 			}
@@ -119,7 +119,7 @@ public class VertexStoreTest {
 		VertexMetadata nextVertexMetadata = VertexMetadata.ofVertex(nextVertex, false);
 
 		VoteData voteData = new VoteData(nextVertexMetadata, genesisVertexMetadata, null);
-		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new ECDSASignatures());
+		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		assertThatThrownBy(() -> {
 			VertexStore vs = new VertexStore(genesisVertex, badRootQC, syncedStateComputer, syncVerticesRPCSender, vertexStoreEventSender, counters);
 			assertNull(vs); // Fail here
@@ -159,7 +159,7 @@ public class VertexStoreTest {
 	public void when_vertex_retriever_succeeds__then_vertex_is_inserted() {
 		Vertex vertex = this.nextVertex.get();
 		VoteData voteData = new VoteData(VertexMetadata.ofVertex(vertex, false), genesisVertexMetadata, null);
-		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
+		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getId()).thenReturn(vertex.getId());
 
@@ -186,7 +186,7 @@ public class VertexStoreTest {
 	public void when_inserting_vertex_with_missing_parent__then_missing_parent_exception_is_thrown() {
 		VertexMetadata vertexMetadata = VertexMetadata.ofGenesisAncestor();
 		VoteData voteData = new VoteData(vertexMetadata, null, null);
-		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
+		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		Vertex vertex = Vertex.createVertex(qc, View.of(1), mock(ClientAtom.class));
 		assertThatThrownBy(() -> vertexStore.insertVertex(vertex))
 			.isInstanceOf(MissingParentException.class);

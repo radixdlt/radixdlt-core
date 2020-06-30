@@ -17,14 +17,15 @@
 
 package com.radixdlt.consensus.validators;
 
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECPublicKey;
 
 /**
@@ -34,7 +35,7 @@ import com.radixdlt.crypto.ECPublicKey;
 public final class ValidationState {
 
 	private final ValidatorSet validatorSet;
-	private final ConcurrentMap<ECPublicKey, ECDSASignature> signedKeys;
+	private final ConcurrentMap<ECPublicKey, Pair<Long, ECDSASignature>> signedKeys;
 	private transient UInt256 signedPower;
 	private final transient UInt256 threshold;
 
@@ -74,15 +75,16 @@ public final class ValidationState {
 	 * elsewhere.
 	 *
 	 * @param key The public key to use for signature verification
+	 * @param timestamp The timestamp of the signature
 	 * @param signature The signature to verify
 	 * @return whether the key was added or not
 	 */
-	public boolean addSignature(ECPublicKey key, ECDSASignature signature) {
+	public boolean addSignature(ECPublicKey key, long timestamp, ECDSASignature signature) {
 		if (validatorSet.containsKey(key)
 			&& !this.signedKeys.containsKey(key)) {
 			this.signedKeys.computeIfAbsent(key, k -> {
 				this.signedPower = this.signedPower.add(this.validatorSet.getPower(key));
-				return signature;
+				return Pair.of(timestamp, signature);
 			});
 			return true;
 		}
@@ -111,8 +113,8 @@ public final class ValidationState {
 	 *
 	 * @return an {@link ECDSASignatures} object for our current set of valid signatures
 	 */
-	public ECDSASignatures signatures() {
-		return new ECDSASignatures(ImmutableMap.copyOf(this.signedKeys));
+	public TimestampedECDSASignatures signatures() {
+		return new TimestampedECDSASignatures(ImmutableMap.copyOf(this.signedKeys));
 	}
 
 	@VisibleForTesting

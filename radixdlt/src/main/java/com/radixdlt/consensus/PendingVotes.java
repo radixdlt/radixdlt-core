@@ -117,7 +117,7 @@ public final class PendingVotes {
 			ValidationState validationState = this.voteState.computeIfAbsent(voteHash, k -> validatorSet.newValidationState());
 
 			// try to form a QC with the added signature according to the requirements
-			if (validationState.addSignature(voteAuthor, signature) && validationState.complete()) {
+			if (validationState.addSignature(voteAuthor, timestampedVoteData.getNodeTimestamp(), signature) && validationState.complete()) {
 				// QC can be formed, so return it
 				// TODO: Include timestamps with signatures
 				QuorumCertificate qc = new QuorumCertificate(voteData, validationState.signatures());

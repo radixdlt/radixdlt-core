@@ -17,16 +17,27 @@
 
 package com.radixdlt.consensus;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.crypto.ECDSASignatures;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.radixdlt.consensus.validators.Validator;
+import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt256;
+
 import java.util.Optional;
 
 @SerializerId2("consensus.qc")
@@ -37,14 +48,17 @@ public final class QuorumCertificate {
 
 	@JsonProperty("signatures")
 	@DsonOutput(Output.ALL)
-	private final ECDSASignatures signatures;
+	private final TimestampedECDSASignatures signatures;
 
 	@JsonProperty("vote_data")
 	@DsonOutput(Output.ALL)
 	private final VoteData voteData;
 
 	@JsonCreator
-	public QuorumCertificate(@JsonProperty("vote_data") VoteData voteData, @JsonProperty("signatures") ECDSASignatures signatures) {
+	public QuorumCertificate(
+		@JsonProperty("vote_data") VoteData voteData,
+		@JsonProperty("signatures") TimestampedECDSASignatures signatures
+	) {
 		this.voteData = Objects.requireNonNull(voteData);
 		this.signatures = Objects.requireNonNull(signatures);
 	}
@@ -61,7 +75,7 @@ public final class QuorumCertificate {
 
 		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(genesisVertex, false);
 		final VoteData voteData = new VoteData(vertexMetadata, vertexMetadata, vertexMetadata);
-		return new QuorumCertificate(voteData, new ECDSASignatures());
+		return new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 	}
 
 	public View getView() {
@@ -84,8 +98,40 @@ public final class QuorumCertificate {
 		return voteData;
 	}
 
-	public ECDSASignatures getSignatures() {
+	public TimestampedECDSASignatures getSignatures() {
 		return signatures;
+	}
+
+	public long quorumTime(ValidatorSet validatorSet) {
+		// Note that signatures are not rechecked here.
+		// They are expected to be checked before the QC is formed.
+		// No real effort is made to ensure the QC is valid for this validator set.
+		UInt256 totalPower = UInt256.ZERO;
+		ImmutableMap<ECPublicKey, Validator> validators = validatorSet.validatorsByKey();
+		List<Pair<Long, UInt256>> weightedTimes = Lists.newArrayList();
+		for (Map.Entry<ECPublicKey, Pair<Long, ECDSASignature>> e : getSignatures().getSignatures().entrySet()) {
+			ECPublicKey thisKey = e.getKey();
+			Validator v = validators.get(thisKey);
+			if (v != null) {
+				UInt256 power = v.getPower();
+				totalPower = totalPower.add(power);
+				weightedTimes.add(Pair.of(e.getValue().getFirst(), power));
+			}
+		}
+		if (totalPower.isZero()) {
+			throw new IllegalStateException("Zero validator power for this QC");
+		}
+		UInt256 median = totalPower.shiftRight(); // Divide by 2
+		// Sort ascending by timestamp
+		weightedTimes.sort(Comparator.comparing(Pair::getFirst));
+		for (Pair<Long, UInt256> w : weightedTimes) {
+			UInt256 weight = w.getSecond();
+			if (median.compareTo(weight) <= 0) {
+				return w.getFirst();
+			}
+			median = median.subtract(w.getSecond());
+		}
+		throw new IllegalStateException("Logic error");
 	}
 
 	@Override

@@ -108,7 +108,6 @@ public class MiddlewareModule extends AbstractModule {
 		return new CommittedAtom(genesisAtom, vertexMetadata);
 	}
 
-
 	@Provides
 	@Singleton
 	private EngineStore<LedgerAtom> engineStore(CommittedAtomsStore committedAtomsStore) {

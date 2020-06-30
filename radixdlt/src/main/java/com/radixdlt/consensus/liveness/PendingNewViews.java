@@ -81,7 +81,7 @@ public final class PendingNewViews {
 					ValidationState validationState = this.newViewState.computeIfAbsent(thisView, k -> validatorSet.newValidationState());
 
 					// check if we have gotten enough new-views to proceed
-					if (validationState.addSignature(newViewAuthor, signature) && validationState.complete()) {
+					if (validationState.addSignature(newViewAuthor, 0, signature) && validationState.complete()) {
 						// if we have enough new-views, return view
 						return Optional.of(thisView);
 					}

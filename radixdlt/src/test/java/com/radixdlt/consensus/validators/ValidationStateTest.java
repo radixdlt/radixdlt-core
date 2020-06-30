@@ -91,15 +91,15 @@ public class ValidationStateTest {
 		Hash hash = Hash.random();
 
 		ValidationState vstate = vset.newValidationState();
-		assertTrue(vstate.addSignature(kp1, k1.sign(hash)));
+		assertTrue(vstate.addSignature(kp1, 0, k1.sign(hash)));
 		assertFalse(vstate.complete());
-		assertTrue(vstate.addSignature(kp2, k2.sign(hash)));
+		assertTrue(vstate.addSignature(kp2, 0, k2.sign(hash)));
 		assertFalse(vstate.complete());
-		assertTrue(vstate.addSignature(kp3, k3.sign(hash)));
+		assertTrue(vstate.addSignature(kp3, 0, k3.sign(hash)));
 		assertTrue(vstate.complete());
-		assertTrue(vstate.addSignature(kp4, k4.sign(hash)));
+		assertTrue(vstate.addSignature(kp4, 0, k4.sign(hash)));
 		assertTrue(vstate.complete());
-		assertFalse(vstate.addSignature(kp5, k5.sign(hash)));
+		assertFalse(vstate.addSignature(kp5, 0, k5.sign(hash)));
 		assertTrue(vstate.complete());
 
 		assertEquals(4, vstate.signatures().count());
