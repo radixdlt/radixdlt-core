@@ -52,7 +52,7 @@ public class ProposerLoadTest {
 		HashMap<Integer, Integer> numberOfProposalsByNodes = new HashMap<>();
 		int turn = 0;
 		int round = 0;
-		for (int step = 0; step < 10_000; step++) {
+		for (int step = 0; step < 100_000; step++) {
 			BFTDeterministicTest.ProcessedMessage message = test.processNextMsg(random);
 		 	if (message.getMessage() instanceof Proposal) {
 				int nodeIndexOfSender = message.getNodeIndexOfSender();
@@ -65,15 +65,12 @@ public class ProposerLoadTest {
 					round++;
 
 					if (round % nodeCount == 0) {
-						System.out.println(String.format("round: %d, step: %d", round, step));
 						assertMaxValueDiff(numberOfProposalsByNodes, nodeIndexOfSender, 2);
 					}
 				}
 
 			}
 		}
-		//noinspection OptionalGetWithoutIsPresent
-		int expectedMaxDiff = nodeCount; // `nodeCount` is arbitrarily chosen...
-		assertMaxValueDiff(numberOfProposalsByNodes, 0, expectedMaxDiff);
+		assertMaxValueDiff(numberOfProposalsByNodes, 0, nodeCount);
 	}
 }
