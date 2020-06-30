@@ -80,6 +80,7 @@ class ControlledBFTNode {
 		ProposerElection proposerElection,
 		ValidatorSet validatorSet,
 		boolean enableGetVerticesRPC,
+		boolean shouldVerifySignatures,
 		BooleanSupplier syncedSupplier
 	) {
 		this.systemCounters = new SystemCountersImpl();
@@ -111,10 +112,10 @@ class ControlledBFTNode {
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
 		TimeoutSender timeoutSender = mock(TimeoutSender.class);
 		// Timeout doesn't matter here
-		Pacemaker pacemaker = new FixedTimeoutPacemaker(1, timeoutSender);
+		Pacemaker pacemaker = new FixedTimeoutPacemaker(1, timeoutSender, shouldVerifySignatures);
 		Hasher hasher = new DefaultHasher();
 		SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), hasher);
-		PendingVotes pendingVotes = new PendingVotes(hasher);
+		PendingVotes pendingVotes = new PendingVotes(hasher, shouldVerifySignatures);
 		BFTEventReducer reducer = new BFTEventReducer(
 			proposalGenerator,
 			mempool,

@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.validators.ValidatorSet;
@@ -49,16 +50,21 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 	private final long timeoutMilliseconds;
 	private final TimeoutSender timeoutSender;
 
-	private final PendingNewViews pendingNewViews = new PendingNewViews();
+	private final PendingNewViews pendingNewViews;
 	private View currentView = View.of(0L);
 	private View lastSyncView = View.of(0L);
 
-	public FixedTimeoutPacemaker(long timeoutMilliseconds, TimeoutSender timeoutSender) {
+	public FixedTimeoutPacemaker(long timeoutMilliseconds, TimeoutSender timeoutSender, boolean shouldVerify) {
 		if (timeoutMilliseconds <= 0) {
 			throw new IllegalArgumentException("timeoutMilliseconds must be > 0 but was " + timeoutMilliseconds);
 		}
 		this.timeoutMilliseconds = timeoutMilliseconds;
 		this.timeoutSender = Objects.requireNonNull(timeoutSender);
+		this.pendingNewViews = new PendingNewViews(new PendingNewViews.Configuration(shouldVerify));
+	}
+
+	public FixedTimeoutPacemaker(long timeoutMilliseconds, TimeoutSender timeoutSender) {
+		this(timeoutMilliseconds, timeoutSender, true);
 	}
 
 	@Override

@@ -48,12 +48,20 @@ public class BFTDeterministicTest {
 	private final ControlledBFTNetwork network;
 
 	public BFTDeterministicTest(int numNodes, boolean enableGetVerticesRPC) {
-		this(numNodes, enableGetVerticesRPC, () -> {
+		this(numNodes, enableGetVerticesRPC, true);
+	}
+
+	public BFTDeterministicTest(int numNodes, boolean enableGetVerticesRPC, boolean shouldVerifySignatures) {
+		this(numNodes, enableGetVerticesRPC, shouldVerifySignatures, () -> {
 			throw new UnsupportedOperationException();
 		});
 	}
 
 	public BFTDeterministicTest(int numNodes, boolean enableGetVerticesRPC, BooleanSupplier syncedSupplier) {
+		this(numNodes, enableGetVerticesRPC, true, syncedSupplier);
+	}
+
+	public BFTDeterministicTest(int numNodes, boolean enableGetVerticesRPC, boolean shouldVerifySignatures, BooleanSupplier syncedSupplier) {
 		ImmutableList<ECKeyPair> keys = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
 			.sorted(Comparator.<ECKeyPair, EUID>comparing(k -> k.getPublicKey().euid()).reversed())
@@ -73,6 +81,7 @@ public class BFTDeterministicTest {
 				new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.nodeKey().euid()), 5),
 				validatorSet,
 				enableGetVerticesRPC,
+			    shouldVerifySignatures,
 				syncedSupplier
 			))
 			.collect(ImmutableList.toImmutableList());

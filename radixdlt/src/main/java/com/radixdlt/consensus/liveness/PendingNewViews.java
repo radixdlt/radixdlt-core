@@ -50,8 +50,37 @@ import com.radixdlt.utils.Longs;
 public final class PendingNewViews {
 	private static final Logger log = LogManager.getLogger();
 
+	private final Configuration configuration;
+
+	public PendingNewViews(Configuration config) {
+		this.configuration = config;
+	}
+
+	public PendingNewViews() {
+		this(new Configuration());
+		assert(configuration.shouldVerifySignatures());
+	}
+
 	private final Map<View, ValidationState> newViewState = Maps.newHashMap();
 	private final Map<ECPublicKey, View> previousNewView = Maps.newHashMap();
+
+	public static final class Configuration {
+		private final boolean shouldVerifySignatures;
+		public Configuration(boolean shouldVerifySignatures) {
+			this.shouldVerifySignatures = shouldVerifySignatures;
+		}
+		public Configuration() {
+			this(true);
+		}
+
+		public boolean shouldVerifySignatures() {
+			return shouldVerifySignatures;
+		}
+	}
+
+	private boolean shouldVerifySignatures() {
+		return configuration.shouldVerifySignatures();
+	}
 
 	/**
 	 * Inserts a {@link NewView}, attempting to form a quorum certificate.
@@ -66,28 +95,35 @@ public final class PendingNewViews {
 		final ECPublicKey newViewAuthor = newView.getAuthor();
 		final Hash newViewId = Hash.of(Longs.toByteArray(newView.getView().number()));
 		final ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
-		if (validatorSet.containsKey(newViewAuthor)) {
-			if (newViewAuthor.verify(newViewId, signature)) {
-				View thisView = newView.getView();
-				if (replacePreviousNewView(newViewAuthor, thisView)) {
-					// Process if signature valid
-					ValidationState validationState = this.newViewState.computeIfAbsent(thisView, k -> validatorSet.newValidationState());
-
-					// check if we have gotten enough new-views to proceed
-					if (validationState.addSignature(newViewAuthor, signature) && validationState.complete()) {
-						// if we have enough new-views, return view
-						return Optional.of(thisView);
-					}
-				}
-			} else {
-				// Signature not valid, just ignore
-				log.info("Ignoring invalid signature from author {}", () -> hostId(newViewAuthor));
-			}
-		} else {
+		if (!validatorSet.containsKey(newViewAuthor)) {
 			// Not a valid validator
 			log.info("Ignoring new view from invalid author {}", () -> hostId(newViewAuthor));
+			return Optional.empty();
 		}
-		return Optional.empty();
+
+		if (shouldVerifySignatures()) {
+			if (!newViewAuthor.verify(newViewId, signature)) {
+				// Signature not valid, just ignore
+				log.info("Ignoring invalid signature from author {}", () -> hostId(newViewAuthor));
+				return Optional.empty();
+			}
+		}
+
+		View thisView = newView.getView();
+		if (!replacePreviousNewView(newViewAuthor, thisView)) {
+			return Optional.empty();
+		}
+
+		// Process if signature
+		ValidationState validationState = this.newViewState.computeIfAbsent(thisView, k -> validatorSet.newValidationState());
+
+		// check if we have gotten enough new-views to proceed
+		if (!(validationState.addSignature(newViewAuthor, signature) && validationState.complete())) {
+			return Optional.empty();
+		}
+
+		// if we have enough new-views, return view
+		return Optional.of(thisView);
 	}
 
 	private boolean replacePreviousNewView(ECPublicKey author, View thisView) {
