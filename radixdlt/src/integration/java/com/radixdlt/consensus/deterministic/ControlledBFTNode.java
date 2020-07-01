@@ -81,6 +81,7 @@ class ControlledBFTNode {
 		this.systemCounters = SystemCounters.getInstance();
 		Vertex genesisVertex = Vertex.createGenesis();
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
+
 		SyncedStateComputer<CommittedAtom> stateComputer = new SyncedStateComputer<CommittedAtom>() {
 			@Override
 			public boolean syncTo(long targetStateVersion, List<ECPublicKey> target, Object opaque) {

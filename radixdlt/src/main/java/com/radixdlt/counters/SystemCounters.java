@@ -126,7 +126,7 @@ public interface SystemCounters {
 	 * the system-wide once provided by the getInstance method.
 	 */
 	static SystemCounters newInstance(Function<CounterType, AtomicLong> supplier) {
-		return new SystemCountersImpl(supplier,System.currentTimeMillis());
+		return new SystemCountersImpl(supplier, System.currentTimeMillis());
 	}
 
 }
