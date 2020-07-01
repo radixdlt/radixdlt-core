@@ -248,4 +248,5 @@ public class SimulatedBFTNetwork {
 			return counters.get(counterType);
 		}
 	}
+
 }

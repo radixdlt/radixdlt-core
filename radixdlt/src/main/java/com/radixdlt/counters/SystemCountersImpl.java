@@ -36,6 +36,7 @@ final class SystemCountersImpl implements SystemCounters {
 		this.supplier = supplier;
 	}
 
+
 	@Override
 	public long increment(CounterType counterType) {
 		return supplier.apply(counterType).incrementAndGet();
