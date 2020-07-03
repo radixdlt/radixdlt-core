@@ -51,6 +51,7 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -115,8 +116,8 @@ public class VertexStoreTest {
 
 	@Test
 	public void when_vertex_store_created_with_incorrect_roots__then_exception_is_thrown() {
-		Vertex nextVertex = this.nextVertex.get();
-		VertexMetadata nextVertexMetadata = VertexMetadata.ofVertex(nextVertex, false);
+		Vertex vertex = this.nextVertex.get();
+		VertexMetadata nextVertexMetadata = VertexMetadata.ofVertex(vertex, false);
 
 		VoteData voteData = new VoteData(nextVertexMetadata, genesisVertexMetadata, null);
 		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
@@ -197,7 +198,9 @@ public class VertexStoreTest {
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).thenReturn(View.of(2));
 		when(vertexMetadata.getId()).thenReturn(mock(Hash.class));
-		assertThatThrownBy(() -> vertexStore.commitVertex(vertexMetadata))
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getCommitted()).thenReturn(Optional.of(vertexMetadata));
+		assertThatThrownBy(() -> vertexStore.commitVertex(qc))
 			.isInstanceOf(IllegalStateException.class);
 	}
 
@@ -220,11 +223,15 @@ public class VertexStoreTest {
 			);
 
 		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(vertex2, false);
-		vertexStore.commitVertex(vertexMetadata2);
-		assertThat(vertexStore.commitVertex(vertexMetadata2)).isPresent();
+		QuorumCertificate qc2 = mock(QuorumCertificate.class);
+		when(qc2.getCommitted()).thenReturn(Optional.of(vertexMetadata2));
+		vertexStore.commitVertex(qc2);
+		assertThat(vertexStore.commitVertex(qc2)).isPresent();
 
 		VertexMetadata vertexMetadata1 = VertexMetadata.ofVertex(vertex1, false);
-		assertThat(vertexStore.commitVertex(vertexMetadata1)).isNotPresent();
+		QuorumCertificate qc1 = mock(QuorumCertificate.class);
+		when(qc1.getCommitted()).thenReturn(Optional.of(vertexMetadata1));
+		assertThat(vertexStore.commitVertex(qc1)).isNotPresent();
 	}
 
 	@Test
@@ -245,7 +252,9 @@ public class VertexStoreTest {
 		vertexStore.insertVertex(nextVertex);
 
 		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex, false);
-		assertThat(vertexStore.commitVertex(vertexMetadata)).hasValue(nextVertex);
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getCommitted()).thenReturn(Optional.of(vertexMetadata));
+		assertThat(vertexStore.commitVertex(qc)).hasValue(nextVertex);
 
 		verify(vertexStoreEventSender, times(1))
 			.sendCommittedVertex(eq(nextVertex));
@@ -271,24 +280,30 @@ public class VertexStoreTest {
 		vertexStore.insertVertex(vertex);
 
 		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(vertex, false);
-		assertThat(vertexStore.commitVertex(vertexMetadata)).hasValue(vertex);
+        QuorumCertificate qc = mock(QuorumCertificate.class);
+        when(qc.getCommitted()).thenReturn(Optional.of(vertexMetadata));
+		assertThat(vertexStore.commitVertex(qc)).hasValue(vertex);
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(vertex));
 		assertThat(vertexStore.getSize()).isEqualTo(1);
 	}
 
 	@Test
 	public void when_insert_and_commit_vertex_2x__then_committed_vertex_should_emit_in_order_and_store_should_have_size_1()
-		throws Exception {
+		throws VertexInsertionException {
 
 		Vertex nextVertex1 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex1);
 		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex1, false);
-		vertexStore.commitVertex(vertexMetadata);
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getCommitted()).thenReturn(Optional.of(vertexMetadata));
+		vertexStore.commitVertex(qc);
 
 		Vertex nextVertex2 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex2);
 		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(nextVertex2, false);
-		vertexStore.commitVertex(vertexMetadata2);
+		QuorumCertificate qc2 = mock(QuorumCertificate.class);
+		when(qc2.getCommitted()).thenReturn(Optional.of(vertexMetadata2));
+		vertexStore.commitVertex(qc2);
 
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex1));
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex2));
@@ -308,14 +323,17 @@ public class VertexStoreTest {
 		vertexStore.insertVertex(nextVertex2);
 
 		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(nextVertex2, false);
-		vertexStore.commitVertex(vertexMetadata2);
+        QuorumCertificate qc2 = mock(QuorumCertificate.class);
+        when(qc2.getCommitted()).thenReturn(Optional.of(vertexMetadata2));
+		vertexStore.commitVertex(qc2);
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex1));
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex2));
 		assertThat(vertexStore.getSize()).isEqualTo(1);
 	}
 
 	@Test
-	public void when_sync_to_qc_which_doesnt_exist_and_vertex_is_inserted_later__then_sync_should_be_emitted() throws Exception {
+	public void when_sync_to_qc_which_doesnt_exist_and_vertex_is_inserted_later__then_sync_should_be_emitted()
+		throws VertexInsertionException {
 		Vertex vertex = nextVertex.get();
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(vertex, false));
@@ -326,7 +344,8 @@ public class VertexStoreTest {
 	}
 
 	@Test
-	public void when_sync_to_qc_with_no_author_and_synced__then_should_return_true() throws Exception {
+	public void when_sync_to_qc_with_no_author_and_synced__then_should_return_true()
+		throws VertexInsertionException {
 		Vertex vertex = nextVertex.get();
 		vertexStore.insertVertex(vertex);
 
@@ -514,7 +533,8 @@ public class VertexStoreTest {
 	}
 
 	@Test
-	public void when_rpc_call_to_get_vertices_with_size_2__then_should_return_both() throws Exception {
+	public void when_rpc_call_to_get_vertices_with_size_2__then_should_return_both()
+		throws VertexInsertionException {
 		Vertex vertex = nextVertex.get();
 		vertexStore.insertVertex(vertex);
 		GetVerticesRequest getVerticesRequest = mock(GetVerticesRequest.class);

@@ -21,11 +21,15 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.AID;
 import nl.jqno.equalsverifier.EqualsVerifier;
+
+import java.util.Optional;
+
 import org.junit.Test;
 
 public class CommittedAtomTest {
@@ -36,8 +40,10 @@ public class CommittedAtomTest {
 		when(clientAtom.getAID()).thenReturn(mock(AID.class));
 		when(clientAtom.getCMInstruction()).thenReturn(mock(CMInstruction.class));
 		when(clientAtom.getPowFeeHash()).thenReturn(mock(Hash.class));
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		CommittedAtom committedAtom = new CommittedAtom(clientAtom, vertexMetadata);
+		QuorumCertificate commitQC = mock(QuorumCertificate.class);
+		VertexMetadata commitMetadata = mock(VertexMetadata.class);
+		when(commitQC.getCommitted()).thenReturn(Optional.of(commitMetadata));
+		CommittedAtom committedAtom = new CommittedAtom(clientAtom, commitQC);
 		assertThat(committedAtom.getClientAtom()).isEqualTo(clientAtom);
 		assertThat(committedAtom.getAID()).isEqualTo(clientAtom.getAID());
 		assertThat(committedAtom.getCMInstruction()).isEqualTo(clientAtom.getCMInstruction());

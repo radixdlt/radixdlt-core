@@ -20,8 +20,11 @@ package com.radixdlt.middleware2.converters;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.VoteData;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.atomos.RRIParticle;
@@ -58,8 +61,12 @@ public class AtomToBinaryConverterTest {
 			ImmutableMap.of("timestamp", "0")
 		);
 
-		VertexMetadata vertexMetadata = new VertexMetadata(0, View.of(1), Hash.random(), 0, false);
-		CommittedAtom committedAtom = new CommittedAtom(ClientAtom.convertFromApiAtom(atom), vertexMetadata);
+		VertexMetadata proposed = new VertexMetadata(0, View.of(3), Hash.random(), 0, false);
+		VertexMetadata parent = new VertexMetadata(0, View.of(2), Hash.random(), 0, false);
+		VertexMetadata committed = new VertexMetadata(0, View.of(1), Hash.random(), 0, false);
+		VoteData voteData = new VoteData(proposed, parent, committed);
+		QuorumCertificate commitQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
+		CommittedAtom committedAtom = new CommittedAtom(ClientAtom.convertFromApiAtom(atom), commitQC);
 
 		byte[] serializedAtom = atomToBinaryConverter.toLedgerEntryContent(committedAtom);
 		CommittedAtom deserializedAtom = atomToBinaryConverter.toAtom(serializedAtom);

@@ -33,6 +33,8 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 
 import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.utils.SystemUtils;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -474,7 +476,9 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	 * @param commitMetadata the metadata of the vertex to commit
 	 * @return the vertex if sucessful, otherwise an empty optional if vertex was already committed
 	 */
-	public Optional<Vertex> commitVertex(VertexMetadata commitMetadata) {
+	public Optional<Vertex> commitVertex(QuorumCertificate commitQC) {
+		VertexMetadata commitMetadata = commitQC.getCommitted()
+			.orElseThrow(() -> SystemUtils.panic("Attempt to commit vertex without committed metadata: {}", commitQC));
 		if (commitMetadata.getView().compareTo(this.getRoot().getView()) < 0) {
 			return Optional.empty();
 		}
@@ -492,7 +496,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		}
 
 		for (Vertex committed : path) {
-			CommittedAtom committedAtom = new CommittedAtom(committed.getAtom(), commitMetadata);
+			CommittedAtom committedAtom = new CommittedAtom(committed.getAtom(), commitQC);
 			this.counters.increment(CounterType.CONSENSUS_PROCESSED);
 			syncedStateComputer.execute(committedAtom);
 

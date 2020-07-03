@@ -373,8 +373,8 @@ public class BFTEventReducerTest {
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getVertex()).thenReturn(proposalVertex);
 
-		VertexMetadata committedVertexMetadata = mock(VertexMetadata.class);
 		Hash committedVertexId = mock(Hash.class);
+		VertexMetadata committedVertexMetadata = mock(VertexMetadata.class);
 		when(committedVertexMetadata.getId()).thenReturn(committedVertexId);
 		Vertex committedVertex = mock(Vertex.class);
 		ClientAtom atom = mock(ClientAtom.class);
@@ -383,7 +383,7 @@ public class BFTEventReducerTest {
 		when(committedVertex.getAtom()).thenReturn(atom);
 
 		when(safetyRules.process(eq(qc))).thenReturn(Optional.of(committedVertexMetadata));
-		when(vertexStore.commitVertex(eq(committedVertexMetadata))).thenReturn(Optional.of(committedVertex));
+		when(vertexStore.commitVertex(eq(qc))).thenReturn(Optional.of(committedVertex));
 		when(proposerElection.getProposer(any())).thenReturn(ECKeyPair.generateNew().getPublicKey());
 
 		reducer.processProposal(proposal);

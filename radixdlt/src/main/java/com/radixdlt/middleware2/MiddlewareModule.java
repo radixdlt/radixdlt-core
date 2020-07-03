@@ -29,7 +29,8 @@ import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.sync.StateSyncNetwork;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
@@ -104,8 +105,9 @@ public class MiddlewareModule extends AbstractModule {
 	@Singleton
 	private CommittedAtom genesisAtom(Universe universe) throws LedgerAtomConversionException {
 		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
-		final VertexMetadata vertexMetadata = VertexMetadata.ofGenesisAncestor();
-		return new CommittedAtom(genesisAtom, vertexMetadata);
+		final Vertex genesisVertex = Vertex.createGenesis();
+		QuorumCertificate commitQC = QuorumCertificate.ofGenesis(genesisVertex);
+		return new CommittedAtom(genesisAtom, commitQC);
 	}
 
 	@Provides

@@ -36,6 +36,8 @@ import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.utils.SystemUtils;
+
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -90,7 +92,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 		StateSyncNetwork stateSyncNetwork
 	) {
 		if (epochChangeView.isGenesis()) {
-			throw new IllegalArgumentException("Epoch change view must not be genesis.");
+			SystemUtils.panic("Epoch change view must not be genesis.");
 		}
 
 		this.radixEngine = Objects.requireNonNull(radixEngine);
@@ -164,7 +166,8 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 
 		// TODO: better randomization of peer selection
 		Peer peer = target.stream()
-			.map(pk -> addressBook.peer(pk.euid()))
+			.map(ECPublicKey::euid)
+			.map(this.addressBook::peer)
 			.filter(Optional::isPresent)
 			.map(Optional::get)
 			.filter(Peer::hasSystem)

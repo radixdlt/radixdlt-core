@@ -19,6 +19,7 @@ package com.radixdlt.middleware2;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncedStateComputer.CommittedInstruction;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.constraintmachine.CMInstruction;
@@ -48,29 +49,37 @@ public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 	@DsonOutput(Output.ALL)
 	private final ClientAtom clientAtom;
 
-	// TODO: include commit signature proof
-	@JsonProperty("metadata")
+	// TODO: include some sort of signature proof for genesis atom
+	@JsonProperty("commit_qc")
 	@DsonOutput(Output.ALL)
-	private final VertexMetadata vertexMetadata;
+	private final QuorumCertificate commitQC;
 
 	CommittedAtom() {
 		// Serializer only
 		this.clientAtom = null;
-		this.vertexMetadata = null;
+		this.commitQC = null;
 	}
 
-	public CommittedAtom(ClientAtom clientAtom, VertexMetadata vertexMetadata) {
+	public CommittedAtom(ClientAtom clientAtom, QuorumCertificate commitQC) {
+		if (!commitQC.getCommitted().isPresent()) {
+			throw new IllegalStateException("Specified QC is not for a commit!");
+		}
 		this.clientAtom = clientAtom;
-		this.vertexMetadata = Objects.requireNonNull(vertexMetadata);
+		this.commitQC = commitQC;
 	}
 
 	public ClientAtom getClientAtom() {
 		return clientAtom;
 	}
 
+	public QuorumCertificate getCommitQC() {
+		return this.commitQC;
+	}
+
 	@Override
 	public VertexMetadata getVertexMetadata() {
-		return vertexMetadata;
+		// Constructor ensures that committed vertex always present
+		return this.commitQC.getCommitted().get();
 	}
 
 	@Override
@@ -85,7 +94,7 @@ public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(clientAtom, vertexMetadata);
+		return Objects.hash(clientAtom, commitQC);
 	}
 
 	@Override
@@ -96,7 +105,7 @@ public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 
 		CommittedAtom other = (CommittedAtom) o;
 		return Objects.equals(other.clientAtom, this.clientAtom)
-			&& Objects.equals(other.vertexMetadata, this.vertexMetadata);
+			&& Objects.equals(other.commitQC, this.commitQC);
 	}
 
 	@Override
@@ -111,6 +120,6 @@ public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 
 	@Override
 	public String toString() {
-		return String.format("%s{atom=%s meta=%s}", getClass().getSimpleName(), clientAtom != null ? clientAtom.getAID() : null, vertexMetadata);
+		return String.format("%s{atom=%s meta=%s}", getClass().getSimpleName(), clientAtom != null ? clientAtom.getAID() : null, commitQC);
 	}
 }

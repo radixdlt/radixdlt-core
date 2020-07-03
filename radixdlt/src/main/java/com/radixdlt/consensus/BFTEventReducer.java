@@ -136,7 +136,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		// commit any newly committable vertices
 		Optional<VertexMetadata> commitMetaDataMaybe = this.safetyRules.process(qc);
 		commitMetaDataMaybe.ifPresent(commitMetaData -> {
-			vertexStore.commitVertex(commitMetaData).ifPresent(vertex -> {
+			vertexStore.commitVertex(qc).ifPresent(vertex -> {
 				log.trace("{}: Committed vertex: {}", this::getShortName, () -> vertex);
 				final ClientAtom committedAtom = vertex.getAtom();
 				if (committedAtom != null) {
