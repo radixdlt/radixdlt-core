@@ -20,6 +20,13 @@ package com.radixdlt.consensus.deterministic;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.CommittedStateSync;
+import com.radixdlt.consensus.GetVerticesResponse;
+import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ChannelId;
 import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ControlledMessage;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
@@ -28,13 +35,20 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.UInt256;
+import org.checkerframework.checker.nullness.Opt;
+
+import javax.swing.text.html.Option;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -94,19 +108,52 @@ public class BFTDeterministicTest {
 	}
 
 	public void processNextMsg(Random random, BiPredicate<Integer, Object> filter) {
+		processNextMsgFilterBasedOnSenderReceiverAndMessage(random, (processedMessage) -> filter.test(processedMessage.getReceiverId(), processedMessage.getMessage()));
+	}
+
+	public static final class ProcessedMessage {
+		private Object message;
+		private int senderId;
+		private int receiverId;
+		ProcessedMessage(Object message, int senderId, int receiverId) {
+			this.message = Objects.requireNonNull(message);
+			this.senderId = senderId;
+			this.receiverId = receiverId;
+		}
+
+		public Object getMessage() {
+			return message;
+		}
+
+		public int getSenderId() {
+			return senderId;
+		}
+
+		public int getReceiverId() {
+			return receiverId;
+		}
+	}
+
+	public void processNextMsgFilterBasedOnSenderReceiverAndMessage(Random random, Function<ProcessedMessage, Boolean> filter) {
 		List<ControlledMessage> possibleMsgs = network.peekNextMessages();
 		if (possibleMsgs.isEmpty()) {
 			throw new IllegalStateException("No messages available (Lost Responsiveness)");
 		}
 
-		int nextIndex =  random.nextInt(possibleMsgs.size());
-		ChannelId channelId = possibleMsgs.get(nextIndex).getChannelId();
+		int indexOfNextMessage =  random.nextInt(possibleMsgs.size());
+		ControlledMessage nextControlledMessage = possibleMsgs.get(indexOfNextMessage);
+		ChannelId channelId = nextControlledMessage.getChannelId();
 		Object msg = network.popNextMessage(channelId);
+	
+		int senderIndex = pks.indexOf(channelId.getSender());
 		int receiverIndex = pks.indexOf(channelId.getReceiver());
-		if (filter.test(receiverIndex, msg)) {
+
+		if (filter.apply(new ProcessedMessage(msg, senderIndex, receiverIndex))) {
 			nodes.get(receiverIndex).processNext(msg);
 		}
 	}
+
+
 
 	public SystemCounters getSystemCounters(int nodeIndex) {
 		return nodes.get(nodeIndex).getSystemCounters();
