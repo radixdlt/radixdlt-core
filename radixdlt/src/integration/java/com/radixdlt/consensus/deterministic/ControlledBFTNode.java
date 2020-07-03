@@ -52,7 +52,6 @@ import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
@@ -80,7 +79,7 @@ class ControlledBFTNode {
 		boolean enableGetVerticesRPC,
 		BooleanSupplier syncedSupplier
 	) {
-		this.systemCounters = new SystemCountersImpl();
+		this.systemCounters = SystemCounters.getInstance();
 		Vertex genesisVertex = Vertex.createGenesis();
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
 
