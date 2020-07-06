@@ -41,7 +41,6 @@ import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
@@ -73,7 +72,7 @@ public class EpochManagerTest {
 
 		this.bftFactory = mock(BFTFactory.class);
 
-		this.systemCounters = new SystemCountersImpl();
+		this.systemCounters = SystemCounters.getInstance();
 		this.syncedStateComputer = mock(SyncedStateComputer.class);
 
 		this.epochManager = new EpochManager(
