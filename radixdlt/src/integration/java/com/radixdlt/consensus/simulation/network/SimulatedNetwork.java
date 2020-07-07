@@ -42,7 +42,7 @@ import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
@@ -56,11 +56,14 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.subjects.CompletableSubject;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Supplier;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.radixdlt.utils.ThreadFactories.daemonThreads;
@@ -99,7 +102,7 @@ public class SimulatedNetwork {
 		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.pacemakerTimeout = pacemakerTimeout;
-		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new SystemCountersImpl()));
+		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> SystemCounters.newInstance(new CountersMap())));
 		this.internalMessages = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new InternalMessagePasser()));
 		this.runners = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, this::createBFTInstance));
 	}
@@ -225,4 +228,20 @@ public class SimulatedNetwork {
 	public void stop() {
 		this.runners.values().forEach(ConsensusRunner::stop);
 	}
+
+	private static class CountersMap implements Function<CounterType, AtomicLong> {
+		private final EnumMap<CounterType, AtomicLong> counters = new EnumMap<>(CounterType.class);
+
+		CountersMap() {
+			for (CounterType counter : CounterType.values()) {
+				counters.put(counter, new AtomicLong(0));
+			}
+		}
+
+		@Override
+		public AtomicLong apply(CounterType counterType) {
+			return counters.get(counterType);
+		}
+	}
+
 }

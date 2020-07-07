@@ -18,6 +18,8 @@
 package com.radixdlt.counters;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 /**
  * System counters interface.
@@ -53,6 +55,8 @@ public interface SystemCounters {
 		MESSAGES_OUTBOUND_SENT("messages.outbound.sent");
 
 		private final String jsonPath;
+
+		private final AtomicLong counter = new AtomicLong(0);
 
 		CounterType(String jsonPath) {
 			this.jsonPath = jsonPath;
@@ -102,4 +106,30 @@ public interface SystemCounters {
 	 * @return the current values as a map
 	 */
 	Map<String, Object> toMap();
+
+	/**
+	 * Resets <b>all</b> the counters to <b>zero</b>.
+	 */
+	void reset();
+
+
+	/**
+	 * Provides the system wide set of counters which should be used by the radyx services.
+	 * @return a <b>thread safe</b> SystemCounters implementation which is backed by system wide counters.
+	 */
+	static SystemCounters getInstance() {
+		return new SystemCountersImpl(counterType -> counterType.counter, System.currentTimeMillis());
+	}
+
+	/**
+	 * Creates a brand new set of counters backed by the given supplier.
+	 * <b>This method should be used only for simulation or testing.</b>
+	 * @param supplier of counters
+	 * @return  a <b>thread safe</b> SystemCounters implementation which are <b>different</b> from
+	 * the system-wide once provided by the getInstance method.
+	 */
+	static SystemCounters newInstance(Function<CounterType, AtomicLong> supplier) {
+		return new SystemCountersImpl(supplier, System.currentTimeMillis());
+	}
+
 }

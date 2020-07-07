@@ -50,7 +50,6 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
@@ -80,7 +79,7 @@ class ControlledNode {
 		boolean enableGetVerticesRPC,
 		BooleanSupplier syncedSupplier
 	) {
-		this.systemCounters = new SystemCountersImpl();
+		this.systemCounters = SystemCounters.getInstance();
 		this.controlledSender = Objects.requireNonNull(sender);
 		this.initialValidatorSet = Objects.requireNonNull(initialValidatorSet);
 
