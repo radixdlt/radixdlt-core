@@ -29,11 +29,11 @@ import org.apache.logging.log4j.Logger;
 public final class RandomLatencyProvider implements LatencyProvider {
 	private static final Logger log = LogManager.getLogger("RLP");
 
-	private final int minLatency;
-	private final int maxLatency;
+	private final long minLatency;
+	private final long maxLatency;
 	private final Random rng;
 
-	RandomLatencyProvider(int minLatency, int maxLatency) {
+	RandomLatencyProvider(long minLatency, long maxLatency) {
 		if (minLatency < 0) {
 			throw new IllegalArgumentException("minimumLatency must be >= 0 but was " + minLatency);
 		}
@@ -50,7 +50,8 @@ public final class RandomLatencyProvider implements LatencyProvider {
 	}
 
 	@Override
-	public int nextLatency(MessageInTransit msg) {
-		return minLatency + rng.nextInt(maxLatency - minLatency + 1);
+	public long nextLatency(MessageInTransit msg) {
+		rng.nextInt(1);
+		return minLatency + rng.nextInt((int)(maxLatency - minLatency) + 1);
 	}
 }

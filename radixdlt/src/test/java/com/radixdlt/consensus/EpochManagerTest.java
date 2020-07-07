@@ -33,6 +33,7 @@ public class EpochManagerTest {
 			mock(PendingVotes.class),
 			proposers -> mock(ProposerElection.class),
 			keyPair,
+			ECKeyPair::sign,
 			mock(SystemCounters.class)
 		);
 

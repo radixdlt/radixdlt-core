@@ -119,7 +119,6 @@ public final class GenerateUniverses {
 	}
 
 	private Universe buildUniverse(int port, String name, String description, UniverseType type, long timestamp, long planckPeriod) throws Exception {
-		LOGGER.info("------------------ Starting of Universe: " + type.toString() + " ------------------");
 		byte universeMagic = (byte) (Universe.computeMagic(universeKey.getPublicKey(), timestamp, port, type, planckPeriod) & 0xFF);
 		Atom universeAtom = createGenesisAtom(universeMagic, timestamp, planckPeriod);
 
@@ -139,11 +138,12 @@ public final class GenerateUniverses {
 			throw new ValidationException("Signature failed for " + name + " universe");
 		}
 		if (standalone) {
+			LOGGER.info("------------------ Start of Universe: " + type.toString() + " ------------------");
 			LOGGER.info(serialization.toJsonObject(universe, Output.API).toString(4));
+			LOGGER.info("------------------ End of Universe: " + type.toString() + " ------------------");
 			byte[] universeBytes = serialization.toDson(universe, Output.WIRE);
 			LOGGER.info("UNIVERSE - " + type + ": " + Bytes.toBase64String(universeBytes));
 		}
-		LOGGER.info("------------------ End of Universe: " + type.toString() + " ------------------");
 		return universe;
 	}
 

@@ -25,6 +25,8 @@ import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EpochRx;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.InternalMessagePasser;
 import com.radixdlt.consensus.PendingVotes;
@@ -47,9 +49,11 @@ import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 
@@ -74,7 +78,7 @@ import static com.radixdlt.utils.ThreadFactories.daemonThreads;
 public class SimulatedBFTNetwork {
 	private static final int TEST_PACEMAKER_TIMEOUT = 1000;
 
-	private final int pacemakerTimeout;
+	private final long pacemakerTimeout;
 	private final TestEventCoordinatorNetwork underlyingNetwork;
 	private final Vertex genesisVertex;
 	private final QuorumCertificate genesisQC;
@@ -105,7 +109,7 @@ public class SimulatedBFTNetwork {
 	public SimulatedBFTNetwork(
 		List<ECKeyPair> nodes,
 		TestEventCoordinatorNetwork underlyingNetwork,
-		int pacemakerTimeout,
+		long pacemakerTimeout,
 		boolean getVerticesRPCEnabled
 	) {
 		this.nodes = nodes;
@@ -155,8 +159,9 @@ public class SimulatedBFTNetwork {
 			e -> e,
 			e -> new ScheduledTimeoutSender(Executors.newSingleThreadScheduledExecutor(daemonThreads("TimeoutSender")))
 		));
+		HashVerifier nullVerifier = (k, h, s) -> true;
 		this.pacemakers = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
-			e -> new FixedTimeoutPacemaker(this.pacemakerTimeout, this.timeoutSenders.get(e))));
+			e -> new FixedTimeoutPacemaker(this.pacemakerTimeout, this.timeoutSenders.get(e), nullVerifier)));
 		this.runners = this.vertexStores.keySet().stream()
 			.collect(ImmutableMap.toImmutableMap(
 				e -> e,
@@ -173,13 +178,17 @@ public class SimulatedBFTNetwork {
 	}
 
 	private ConsensusRunner createBFTInstance(ECKeyPair key) {
+		Hasher defaultHasher = new DefaultHasher();
+		Hasher nullHasher = d -> Hash.ZERO_HASH;
+		HashSigner nullSigner = (k, h) -> new ECDSASignature();
+
 		Mempool mempool = new EmptyMempool();
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStores.get(key), mempool);
-		Hasher hasher = new DefaultHasher();
-		SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), hasher);
+		SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), nullHasher, nullSigner);
 		ScheduledTimeoutSender timeoutSender = timeoutSenders.get(key);
 		FixedTimeoutPacemaker pacemaker = pacemakers.get(key);
-		PendingVotes pendingVotes = new PendingVotes(hasher);
+		// PendingVotes needs a hasher that produces unique hashes so it can index things properly
+		PendingVotes pendingVotes = new PendingVotes(defaultHasher, ECPublicKey::verify);
 		EpochRx epochRx = () -> Observable.just(validatorSet).concatWith(Observable.never());
 		EpochManager epochManager = new EpochManager(
 			proposalGenerator,
@@ -191,6 +200,7 @@ public class SimulatedBFTNetwork {
 			pendingVotes,
 			proposers -> getProposerElection(), // create a new ProposerElection per node
 			key,
+			nullSigner,
 			counters.get(key)
 		);
 
@@ -246,7 +256,7 @@ public class SimulatedBFTNetwork {
 		return underlyingNetwork;
 	}
 
-	public int getPacemakerTimeout() {
+	public long getPacemakerTimeout() {
 		return pacemakerTimeout;
 	}
 }

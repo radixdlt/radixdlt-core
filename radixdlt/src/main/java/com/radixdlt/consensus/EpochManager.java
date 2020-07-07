@@ -48,6 +48,7 @@ public class EpochManager {
 	private final PendingVotes pendingVotes;
 	private final ProposerElectionFactory proposerElectionFactory;
 	private final ECKeyPair selfKey;
+	private final HashSigner signer;
 	private final SystemCounters counters;
 
 	@Inject
@@ -61,6 +62,7 @@ public class EpochManager {
 		PendingVotes pendingVotes,
 		ProposerElectionFactory proposerElectionFactory,
 		@Named("self") ECKeyPair selfKey,
+		HashSigner signer,
 		SystemCounters counters
 	) {
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
@@ -72,6 +74,7 @@ public class EpochManager {
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.selfKey = Objects.requireNonNull(selfKey);
+		this.signer = Objects.requireNonNull(signer);
 		this.counters = Objects.requireNonNull(counters);
 	}
 
@@ -94,6 +97,7 @@ public class EpochManager {
 			this.pendingVotes,
 			proposerElection,
 			this.selfKey,
+			this.signer,
 			validatorSet,
 			counters
 		);

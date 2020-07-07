@@ -27,9 +27,10 @@ import com.radixdlt.consensus.simulation.SimulatedBFTNetwork;
 import com.radixdlt.consensus.simulation.DroppingLatencyProvider;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.examples.tictactoe.Pair;
 
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
+import com.radixdlt.utils.Pair;
+
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
 import org.assertj.core.api.Condition;
@@ -125,8 +126,8 @@ public class CrashFaultNetworkTest {
 
 		// there should be a new highest QC every once in a while to ensure progress
 		// the minimum latency per round is determined using the network latency and a tolerance
-		final int maxLatency = TestEventCoordinatorNetwork.DEFAULT_LATENCY;
-		int worstCaseLatencyPerRound = maxLatency * 2 // base latency: two rounds in the normal case
+		final long maxLatency = TestEventCoordinatorNetwork.DEFAULT_LATENCY;
+		long worstCaseLatencyPerRound = maxLatency * 2 // base latency: two rounds in the normal case
 			+ numCrashed * (maxLatency * 4 + bftNetwork.getPacemakerTimeout()); // four rounds plus timeout in bad case
 		// account for any inaccuracies, execution time, scheduling inefficiencies..
 		// the tolerance is high since we're only interested in qualitative progress in this test
@@ -232,8 +233,8 @@ public class CrashFaultNetworkTest {
 
 		// there should be a new highest QC every once in a while to ensure progress
 		// the minimum latency per round is determined using the network latency and a tolerance
-		final int maxLatency = TestEventCoordinatorNetwork.DEFAULT_LATENCY;
-		int worstCaseLatencyPerRound = maxLatency * 2 // base latency: two rounds in the normal case
+		final long maxLatency = TestEventCoordinatorNetwork.DEFAULT_LATENCY;
+		long worstCaseLatencyPerRound = maxLatency * 2 // base latency: two rounds in the normal case
 			+ numNodes * (maxLatency * 4 + bftNetwork.getPacemakerTimeout()); // four rounds plus timeout in bad case
 		// account for any inaccuracies, execution time, scheduling inefficiencies..
 		// the tolerance is high since we're only interested in qualitative progress in this test

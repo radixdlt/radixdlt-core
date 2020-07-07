@@ -61,6 +61,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final Pacemaker pacemaker;
 	private final ProposerElection proposerElection;
 	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
+	private final HashSigner signer;
 	private final SafetyRules safetyRules;
 	private final ValidatorSet validatorSet;
 	private final SystemCounters counters;
@@ -78,6 +79,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		PendingVotes pendingVotes,
 		ProposerElection proposerElection,
 		@Named("self") ECKeyPair selfKey,
+		HashSigner signer,
 		ValidatorSet validatorSet,
 		SystemCounters counters
 	) {
@@ -90,6 +92,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.selfKey = Objects.requireNonNull(selfKey);
+		this.signer = Objects.requireNonNull(signer);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.counters = Objects.requireNonNull(counters);
 	}
@@ -105,7 +108,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	// Hotstuff's Event-Driven OnNextSyncView
 	private void proceedToView(View nextView) {
 		// TODO make signing more robust by including author in signed hash
-		ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
+		ECDSASignature signature = this.signer.sign(this.selfKey, Hash.hash256(Longs.toByteArray(nextView.number())));
 		NewView newView = new NewView(
 			selfKey.getPublicKey(),
 			nextView,
@@ -161,13 +164,13 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			log.trace("{}: VOTE: Formed QC: {}", this::getShortName, () -> qc);
 			if (vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), vote.getAuthor())) {
 				if (!synchedLog) {
-					log.info("{}: VOTE: QC Synced: {}", this::getShortName, () -> qc);
+					log.debug("{}: VOTE: QC Synced: {}", this::getShortName, () -> qc);
 					synchedLog = true;
 				}
 				processQC(qc);
 			} else {
 				if (synchedLog) {
-					log.info("{}: VOTE: QC Not synced: {}", this::getShortName, () -> qc);
+					log.debug("{}: VOTE: QC Not synced: {}", this::getShortName, () -> qc);
 					synchedLog = false;
 				}
 				unsyncedQCs.put(qc.getProposed().getId(), qc);
@@ -249,12 +252,12 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		Optional<View> nextView = this.pacemaker.processLocalTimeout(view);
 		if (nextView.isPresent()) {
 			this.proceedToView(nextView.get());
-			log.trace("{}: LOCAL_TIMEOUT: Processed {}", this::getShortName, () -> view);
+			log.info("{}: LOCAL_TIMEOUT: Processed {}", this::getShortName, () -> view);
 
 			counters.set(CounterType.CONSENSUS_TIMEOUT_VIEW, view.number());
 			counters.increment(CounterType.CONSENSUS_TIMEOUT);
 		} else {
-			log.warn("{}: LOCAL_TIMEOUT: Ignoring {}", this::getShortName, () -> view);
+			log.trace("{}: LOCAL_TIMEOUT: Ignoring {}", this::getShortName, () -> view);
 		}
 	}
 

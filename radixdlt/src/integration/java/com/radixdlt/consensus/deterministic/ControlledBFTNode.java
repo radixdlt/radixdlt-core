@@ -17,14 +17,14 @@
 
 package com.radixdlt.consensus.deterministic;
 
-import static org.mockito.Mockito.mock;
-
 import com.radixdlt.consensus.BFTEventPreprocessor;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.GetVerticesResponse;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.NewView;
@@ -41,6 +41,7 @@ import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.deterministic.BFTDeterministicTest.SyncAndTimeout;
 import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ControlledSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
@@ -54,6 +55,7 @@ import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -79,7 +81,7 @@ class ControlledBFTNode {
 		ControlledSender sender,
 		ProposerElection proposerElection,
 		ValidatorSet validatorSet,
-		boolean enableGetVerticesRPC,
+		SyncAndTimeout syncAndTimeout,
 		BooleanSupplier syncedSupplier
 	) {
 		this.systemCounters = new SystemCountersImpl();
@@ -102,19 +104,28 @@ class ControlledBFTNode {
 
 			@Override
 			public void execute(CommittedAtom instruction) {
+				// Nothing to do here
 			}
 		};
 
-		SyncVerticesRPCSender syncVerticesRPCSender = enableGetVerticesRPC ? sender : EmptySyncVerticesRPCSender.INSTANCE;
+		Hasher nullHasher = o -> Hash.ZERO_HASH;
+		Hasher defaultHasher = new DefaultHasher();
+		HashVerifier nullVerifier = (k, h, s) -> true;
+		HashSigner nullSigner = (k, h) -> new ECDSASignature();
+
+		boolean enableSync = syncAndTimeout == SyncAndTimeout.SYNC || syncAndTimeout == SyncAndTimeout.SYNC_AND_TIMEOUT;
+		boolean enableTimeout = syncAndTimeout == SyncAndTimeout.SYNC_AND_TIMEOUT;
+		SyncVerticesRPCSender syncVerticesRPCSender = enableSync ? sender : EmptySyncVerticesRPCSender.INSTANCE;
 		this.vertexStore = new VertexStore(genesisVertex, genesisQC, stateComputer, syncVerticesRPCSender, sender, systemCounters);
 		Mempool mempool = new EmptyMempool();
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
-		TimeoutSender timeoutSender = mock(TimeoutSender.class);
-		// Timeout doesn't matter here
-		Pacemaker pacemaker = new FixedTimeoutPacemaker(1, timeoutSender);
-		Hasher hasher = new DefaultHasher();
-		SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), hasher);
-		PendingVotes pendingVotes = new PendingVotes(hasher);
+
+		TimeoutSender timeoutSender = enableTimeout ? sender : (view, timeout) -> { };
+		Pacemaker pacemaker = new FixedTimeoutPacemaker(1, timeoutSender, nullVerifier);
+		SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), nullHasher, nullSigner);
+
+		// PendingVotes needs a hasher that produces uniquish results, as it uses the hash for indexing
+		PendingVotes pendingVotes = new PendingVotes(defaultHasher, nullVerifier);
 		BFTEventReducer reducer = new BFTEventReducer(
 			proposalGenerator,
 			mempool,
@@ -125,6 +136,7 @@ class ControlledBFTNode {
 			pendingVotes,
 			proposerElection,
 			key,
+			nullSigner,
 			validatorSet,
 			systemCounters
 		);

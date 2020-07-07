@@ -49,13 +49,13 @@ public class BFTSimulatedTest {
 	private final ImmutableList<ECKeyPair> nodes;
 	private final LatencyProvider latencyProvider;
 	private final ImmutableMap<String, BFTCheck> checks;
-	private final int pacemakerTimeout;
+	private final long pacemakerTimeout;
 	private final boolean getVerticesRPCEnabled;
 
 	private BFTSimulatedTest(
 		ImmutableList<ECKeyPair> nodes,
 		LatencyProvider latencyProvider,
-		int pacemakerTimeout,
+		long pacemakerTimeout,
 		boolean getVerticesRPCEnabled,
 		ImmutableMap<String, BFTCheck> checks
 	) {
@@ -70,7 +70,7 @@ public class BFTSimulatedTest {
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
 		private final ImmutableMap.Builder<String, BFTCheck> checksBuilder = ImmutableMap.builder();
 		private List<ECKeyPair> nodes = Collections.singletonList(ECKeyPair.generateNew());
-		private int pacemakerTimeout = 12 * TestEventCoordinatorNetwork.DEFAULT_LATENCY;
+		private long pacemakerTimeout = 12 * TestEventCoordinatorNetwork.DEFAULT_LATENCY;
 		private boolean getVerticesRPCEnabled = true;
 
 		private Builder() {
@@ -115,7 +115,7 @@ public class BFTSimulatedTest {
 		}
 
 		public Builder checkLiveness(String checkName) {
-			this.checksBuilder.put(checkName, new LivenessCheck(8 * TestEventCoordinatorNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
+			this.checksBuilder.put(checkName, new LivenessCheck(8L * TestEventCoordinatorNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
 			return this;
 		}
 

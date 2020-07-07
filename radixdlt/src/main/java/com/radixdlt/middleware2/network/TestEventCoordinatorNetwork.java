@@ -46,7 +46,7 @@ import java.util.concurrent.TimeUnit;
  * Simple simulated network implementation that just sends messages to itself with a configurable latency.
  */
 public class TestEventCoordinatorNetwork {
-	public static final int DEFAULT_LATENCY = 50;
+	public static final long DEFAULT_LATENCY = 100L;
 
 	public static final class MessageInTransit {
 		private final Object content;
@@ -111,7 +111,7 @@ public class TestEventCoordinatorNetwork {
 		 * @param msg the next message
 		 * @return the latency in milliseconds if >= 0, otherwise a negative number signifies a drop
 		 */
-		int nextLatency(MessageInTransit msg);
+		long nextLatency(MessageInTransit msg);
 	}
 
 	private final Subject<MessageInTransit> receivedMessages;

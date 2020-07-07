@@ -19,6 +19,7 @@ package com.radixdlt.consensus.safety;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -41,6 +42,7 @@ import java.util.Optional;
 public final class SafetyRules {
 	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
 	private final Hasher hasher;
+	private final HashSigner signer;
 
 	private SafetyState state;
 
@@ -48,11 +50,13 @@ public final class SafetyRules {
 	public SafetyRules(
 		@Named("self") ECKeyPair selfKey,
 		SafetyState initialState,
-		Hasher hasher
+		Hasher hasher,
+		HashSigner signer
 	) {
 		this.selfKey = Objects.requireNonNull(selfKey);
 		this.state = Objects.requireNonNull(initialState);
 		this.hasher = Objects.requireNonNull(hasher);
+		this.signer = Objects.requireNonNull(signer);
 	}
 
 	/**
@@ -100,7 +104,7 @@ public final class SafetyRules {
 	 */
 	public Proposal signProposal(Vertex proposedVertex, QuorumCertificate highestCommittedQC) {
 		final Hash vertexHash = this.hasher.hash(proposedVertex);
-		ECDSASignature signature = this.selfKey.sign(vertexHash);
+		ECDSASignature signature = this.signer.sign(selfKey, vertexHash);
 		return new Proposal(proposedVertex, highestCommittedQC, this.selfKey.getPublicKey(), signature);
 	}
 
@@ -153,7 +157,7 @@ public final class SafetyRules {
 		this.state = safetyStateBuilder.build();
 
 		// TODO make signing more robust by including author in signed hash
-		ECDSASignature signature = this.selfKey.sign(voteHash);
+		ECDSASignature signature = this.signer.sign(selfKey, voteHash);
 		return new Vote(selfKey.getPublicKey(), voteData, signature);
 	}
 }

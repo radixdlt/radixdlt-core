@@ -198,14 +198,14 @@ public final class VertexStore {
 	public void processGetVerticesRequest(GetVerticesRequest request) {
 		// TODO: Handle nodes trying to DDOS this endpoint
 
-		log.info("SYNC_VERTICES: Received GetVerticesRequest {}", request);
+		log.debug("SYNC_VERTICES: Received GetVerticesRequest {}", request);
 		ImmutableList<Vertex> fetched = this.getVertices(request.getVertexId(), request.getCount());
-		log.info("SYNC_VERTICES: Sending Response {}", fetched);
+		log.debug("SYNC_VERTICES: Sending Response {}", fetched);
 		this.syncVerticesRPCSender.sendGetVerticesResponse(request, fetched);
 	}
 
 	private void rebuildAndSyncQC(SyncState syncState) {
-		log.info("SYNC_STATE: Rebuilding and syncing QC: sync={} curRoot={}", syncState, vertices.get(rootId.get()));
+		log.debug("SYNC_STATE: Rebuilding and syncing QC: sync={} curRoot={}", syncState, vertices.get(rootId.get()));
 
 		// TODO: check if there are any vertices which haven't been local sync processed yet
 		if (requiresCommittedStateSync(syncState)) {
@@ -213,7 +213,7 @@ public final class VertexStore {
 			List<Vertex> nonRootVertices = syncState.fetched.stream().skip(1).collect(Collectors.toList());
 			rebuild(syncState.fetched.get(0), syncState.fetched.get(1).getQC(), syncState.committedQC, nonRootVertices);
 		} else {
-			log.info("SYNC_STATE: skipping rebuild");
+			log.debug("SYNC_STATE: skipping rebuild");
 		}
 
 		// At this point we are guaranteed to be in sync with the committed state
@@ -224,7 +224,7 @@ public final class VertexStore {
 	}
 
 	public void processCommittedStateSync(CommittedStateSync committedStateSync) {
-		log.info("SYNC_STATE: synced {}", committedStateSync);
+		log.debug("SYNC_STATE: synced {}", committedStateSync);
 
 		final Hash syncTo = (Hash) committedStateSync.getOpaque();
 		SyncState syncState = syncing.get(syncTo);
@@ -234,7 +234,7 @@ public final class VertexStore {
 	}
 
 	private void processVerticesResponseForCommittedSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
-		log.info("SYNC_STATE: Processing vertices {}", syncState);
+		log.debug("SYNC_STATE: Processing vertices {}", syncState);
 
 		long stateVersion = syncState.committedVertexMetadata.getStateVersion();
 		List<ECPublicKey> signers = Collections.singletonList(syncState.author);
@@ -249,32 +249,34 @@ public final class VertexStore {
 
 	private void processVerticesResponseForQCSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
 		Vertex vertex = response.getVertices().get(0);
-		syncState.fetched.addFirst(vertex);
-		Hash nextVertexId = vertex.getQC().getProposed().getId();
+		if (!vertex.getView().isGenesis()) {
+			syncState.fetched.addFirst(vertex);
+			Hash nextVertexId = vertex.getQC().getProposed().getId();
 
-		if (vertices.containsKey(nextVertexId)) {
-			for (Vertex v: syncState.fetched) {
-				if (!addQC(v.getQC())) {
-					log.info("GET_VERTICES failed: {}", syncState.qc);
-					return;
+			if (vertices.containsKey(nextVertexId)) {
+				for (Vertex v: syncState.fetched) {
+					if (!addQC(v.getQC())) {
+						log.info("GET_VERTICES failed: {}", syncState.qc);
+						return;
+					}
+					try {
+						insertVertexInternal(v);
+					} catch (VertexInsertionException e) {
+						log.info("GET_VERTICES failed: {}", e.getMessage());
+						return;
+					}
 				}
-				try {
-					insertVertexInternal(v);
-				} catch (VertexInsertionException e) {
-					log.info("GET_VERTICES failed: {}", e.getMessage());
-					return;
-				}
+				addQC(syncState.qc);
+			} else {
+				log.debug("SYNC_VERTICES: Sending further GetVerticesRequest for qc={} fetched={} root={}",
+						syncState.qc, syncState.fetched.size(), vertices.get(rootId.get()));
+				syncVerticesRPCSender.sendGetVerticesRequest(nextVertexId, syncState.author, 1, syncTo);
 			}
-			addQC(syncState.qc);
-		} else {
-			log.info("SYNC_VERTICES: Sending further GetVerticesRequest for qc={} fetched={} root={}",
-				syncState.qc, syncState.fetched.size(), vertices.get(rootId.get()));
-			syncVerticesRPCSender.sendGetVerticesRequest(nextVertexId, syncState.author, 1, syncTo);
 		}
 	}
 
 	public void processGetVerticesResponse(GetVerticesResponse response) {
-		log.info("SYNC_VERTICES: Received GetVerticesResponse {}", response);
+		log.debug("SYNC_VERTICES: Received GetVerticesResponse {}", response);
 
 		final Hash syncTo = (Hash) response.getOpaque();
 		SyncState syncState = syncing.get(syncTo);
@@ -283,7 +285,7 @@ public final class VertexStore {
 		}
 
 		if (response.getVertices().isEmpty()) {
-			log.info("GET_VERTICES failed: response was empty sync={}", syncState);
+			log.warn("GET_VERTICES failed: response was empty sync={}", syncState);
 			// failed
 			// TODO: retry
 			return;
@@ -304,7 +306,7 @@ public final class VertexStore {
 	private void doQCSync(SyncState syncState) {
 		final Hash vertexId = syncState.getQC().getProposed().getId();
 		syncState.setSyncStage(SyncStage.GET_QC_VERTICES);
-		log.info("SYNC_VERTICES: QC: Sending initial GetVerticesRequest for sync={}", syncState);
+		log.debug("SYNC_VERTICES: QC: Sending initial GetVerticesRequest for sync={}", syncState);
 		syncVerticesRPCSender.sendGetVerticesRequest(vertexId, syncState.author, 1, vertexId);
 	}
 
@@ -312,13 +314,13 @@ public final class VertexStore {
 		final Hash committedQCId = syncState.getCommittedQC().getProposed().getId();
 		final Hash qcId = syncState.qc.getProposed().getId();
 		syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
-		log.info("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest for sync={}", syncState);
+		log.debug("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest for sync={}", syncState);
 		// Retrieve the 3 vertices preceding the committedQC so we can create a valid committed root
 		syncVerticesRPCSender.sendGetVerticesRequest(committedQCId, syncState.author, 3, qcId);
 	}
 
 	public void processLocalSync(Hash vertexId) {
-		log.info("LOCAL_SYNC: Processed {}", vertexId);
+		log.debug("LOCAL_SYNC: Processed {}", vertexId);
 		syncing.remove(vertexId);
 	}
 
@@ -338,7 +340,7 @@ public final class VertexStore {
 			return true;
 		}
 
-		log.info("SYNC_TO_QC: Need sync: {} {}", qc, committedQC);
+		log.debug("SYNC_TO_QC: Need sync: {} {}", qc, committedQC);
 
 		final Hash vertexId = qc.getProposed().getId();
 		if (syncing.containsKey(vertexId)) {
@@ -434,9 +436,9 @@ public final class VertexStore {
 		}
 
 		for (Vertex committed : path) {
+			this.counters.increment(CounterType.CONSENSUS_PROCESSED);
 			if (committed.getAtom() != null) {
 				CommittedAtom committedAtom = committed.getAtom().committed(commitMetadata);
-				this.counters.increment(CounterType.CONSENSUS_PROCESSED);
 				syncedStateComputer.execute(committedAtom);
 			}
 

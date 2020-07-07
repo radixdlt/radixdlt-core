@@ -17,12 +17,23 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 
 /**
- * An object capable of hashing an object
+ * Verifies signatures against hashes.
  */
 @FunctionalInterface
-public interface Hasher {
-	Hash hash(Object o);
+public interface HashVerifier {
+	/**
+	 * Verify the specified signature against the specified hash with
+	 * the specified public key.
+	 *
+	 * @param pubKey The public key to verify with
+	 * @param hash The the hash to verify
+	 * @param sig The signature to verify
+	 * @return {@code true} if the signature matches, {@code false} otherwise
+	 */
+	boolean verify(ECPublicKey pubKey, Hash hash, ECDSASignature sig);
 }

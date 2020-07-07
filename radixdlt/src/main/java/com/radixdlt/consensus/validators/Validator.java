@@ -56,7 +56,7 @@ public final class Validator {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.nodeKey, this.power);
+		return this.nodeKey.hashCode() * 31 + this.power.hashCode();
 	}
 
 	@Override

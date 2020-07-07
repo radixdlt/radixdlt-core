@@ -17,12 +17,32 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 
 /**
- * An object capable of hashing an object
+ * Signs a hash.
  */
 @FunctionalInterface
-public interface Hasher {
-	Hash hash(Object o);
+public interface HashSigner {
+	/**
+	 * Sign the specified hash with the specified key.
+	 *
+	 * @param hash The hash to sign
+	 * @param key The key to sign with
+	 * @return The {@link ECDSASignature}
+	 */
+	ECDSASignature sign(ECKeyPair key, byte[] hash);
+
+	/**
+	 * Sign the specified hash with the specified key.
+	 *
+	 * @param hash The hash to sign
+	 * @param key The key to sign with
+	 * @return The {@link ECDSASignature}
+	 */
+	default ECDSASignature sign(ECKeyPair key, Hash hash) {
+		return sign(key, hash.toByteArray());
+	}
 }

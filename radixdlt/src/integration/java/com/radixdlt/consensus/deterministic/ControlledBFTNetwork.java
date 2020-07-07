@@ -18,7 +18,6 @@
 package com.radixdlt.consensus.deterministic;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.GetVerticesResponse;
@@ -28,13 +27,13 @@ import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.VertexStore.SyncSender;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * A BFT network supporting the EventCoordinatorNetworkSender interface which
@@ -44,18 +43,11 @@ import java.util.stream.Collectors;
  */
 public final class ControlledBFTNetwork {
 	private final ImmutableList<ECPublicKey> nodes;
-	private final ImmutableMap<ChannelId, LinkedList<ControlledMessage>> messageQueue;
+	private final MessageQueue messageQueue;
 
 	ControlledBFTNetwork(ImmutableList<ECPublicKey> nodes) {
 		this.nodes = nodes;
-		this.messageQueue = nodes.stream()
-			.flatMap(n0 -> nodes.stream().map(n1 -> new ChannelId(n0, n1)))
-			.collect(
-				ImmutableMap.toImmutableMap(
-					key -> key,
-					key -> new LinkedList<>()
-				)
-			);
+		this.messageQueue = new MessageQueue();
 	}
 
 	static final class ChannelId {
@@ -119,20 +111,17 @@ public final class ControlledBFTNetwork {
 		}
 	}
 
-	private void putMesssage(ControlledMessage controlledMessage) {
-		messageQueue.get(controlledMessage.getChannelId()).add(controlledMessage);
+	private void putMessage(View v, ControlledMessage controlledMessage) {
+		messageQueue.push(v, controlledMessage);
 	}
 
 	public List<ControlledMessage> peekNextMessages() {
-		return messageQueue.values()
-			.stream()
-			.filter(l -> !l.isEmpty())
-			.map(LinkedList::getFirst)
-			.collect(Collectors.toList());
+		return this.messageQueue.lowestViewMessages();
 	}
 
 	public Object popNextMessage(ChannelId channelId) {
-		return messageQueue.get(channelId).pop().getMsg();
+		ControlledMessage msg = messageQueue.pop(channelId);
+		return msg.getMsg();
 	}
 
 	private static class ControlledGetVerticesRequest implements GetVerticesRequest {
@@ -163,8 +152,9 @@ public final class ControlledBFTNetwork {
 		return new ControlledSender(sender);
 	}
 
-	public final class ControlledSender implements BFTEventSender, SyncSender, SyncVerticesRPCSender {
+	public final class ControlledSender implements BFTEventSender, SyncSender, SyncVerticesRPCSender, TimeoutSender {
 		private final ECPublicKey sender;
+		private View currentView = View.genesis();
 
 		private ControlledSender(ECPublicKey sender) {
 			this.sender = sender;
@@ -172,40 +162,46 @@ public final class ControlledBFTNetwork {
 
 		@Override
 		public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
-			putMesssage(new ControlledMessage(sender, node, new ControlledGetVerticesRequest(id, count, sender, opaque)));
+			putMessage(this.currentView, new ControlledMessage(sender, node, new ControlledGetVerticesRequest(id, count, sender, opaque)));
 		}
 
 		@Override
 		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
 			ControlledGetVerticesRequest request = (ControlledGetVerticesRequest) originalRequest;
 			GetVerticesResponse response = new GetVerticesResponse(request.getVertexId(), vertices, request.opaque);
-			putMesssage(new ControlledMessage(sender, request.requestor, response));
+			putMessage(this.currentView, new ControlledMessage(sender, request.requestor, response));
 		}
 
 		@Override
 		public void synced(Hash vertexId) {
-			putMesssage(new ControlledMessage(sender, sender, vertexId));
+			putMessage(this.currentView, new ControlledMessage(sender, sender, vertexId));
 		}
 
 		@Override
 		public void broadcastProposal(Proposal proposal) {
 			for (ECPublicKey receiver : nodes) {
-				putMesssage(new ControlledMessage(sender, receiver, proposal));
+				putMessage(this.currentView, new ControlledMessage(sender, receiver, proposal));
 			}
 		}
 
 		@Override
 		public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
-			putMesssage(new ControlledMessage(sender, newViewLeader, newView));
+			putMessage(this.currentView, new ControlledMessage(sender, newViewLeader, newView));
+			this.currentView = newView.getView();
 		}
 
 		@Override
 		public void sendVote(Vote vote, ECPublicKey leader) {
-			putMesssage(new ControlledMessage(sender, leader, vote));
+			putMessage(this.currentView, new ControlledMessage(sender, leader, vote));
 		}
 
 		public void committedStateSync(CommittedStateSync committedStateSync) {
-			putMesssage(new ControlledMessage(sender, sender, committedStateSync));
+			putMessage(this.currentView, new ControlledMessage(sender, sender, committedStateSync));
+		}
+
+		@Override
+		public void scheduleTimeout(View view, long milliseconds) {
+			putMessage(view.next(), new ControlledMessage(sender, sender, view));
 		}
 	}
 }

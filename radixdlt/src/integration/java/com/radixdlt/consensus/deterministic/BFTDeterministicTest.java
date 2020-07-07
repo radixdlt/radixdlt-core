@@ -20,13 +20,6 @@ package com.radixdlt.consensus.deterministic;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.CommittedStateSync;
-import com.radixdlt.consensus.GetVerticesResponse;
-import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.VertexStore;
-import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ChannelId;
 import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ControlledMessage;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
@@ -35,20 +28,15 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.UInt256;
-import org.checkerframework.checker.nullness.Opt;
-
-import javax.swing.text.html.Option;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Random;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
-import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -61,13 +49,23 @@ public class BFTDeterministicTest {
 	private final ImmutableList<ECPublicKey> pks;
 	private final ControlledBFTNetwork network;
 
-	public BFTDeterministicTest(int numNodes, boolean enableGetVerticesRPC) {
-		this(numNodes, enableGetVerticesRPC, () -> {
+	public enum SyncAndTimeout {
+		NONE,
+		SYNC,
+		SYNC_AND_TIMEOUT
+	}
+
+	public BFTDeterministicTest(int numNodes, SyncAndTimeout syncAndTimeouts) {
+		this(numNodes, syncAndTimeouts, () -> {
 			throw new UnsupportedOperationException();
 		});
 	}
 
-	public BFTDeterministicTest(int numNodes, boolean enableGetVerticesRPC, BooleanSupplier syncedSupplier) {
+	public BFTDeterministicTest(
+		int numNodes,
+		SyncAndTimeout syncAndTimeout,
+		BooleanSupplier syncedSupplier
+	) {
 		ImmutableList<ECKeyPair> keys = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
 			.sorted(Comparator.<ECKeyPair, EUID>comparing(k -> k.getPublicKey().euid()).reversed())
@@ -86,7 +84,7 @@ public class BFTDeterministicTest {
 				network.getSender(key.getPublicKey()),
 				new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.nodeKey().euid()), 5),
 				validatorSet,
-				enableGetVerticesRPC,
+				syncAndTimeout,
 				syncedSupplier
 			))
 			.collect(ImmutableList.toImmutableList());
@@ -108,7 +106,7 @@ public class BFTDeterministicTest {
 	}
 
 	public void processNextMsg(Random random, BiPredicate<Integer, Object> filter) {
-		processNextMsgFilterBasedOnSenderReceiverAndMessage(random, (processedMessage) -> filter.test(processedMessage.getReceiverId(), processedMessage.getMessage()));
+		processNextMsgFilterBasedOnSenderReceiverAndMessage(random, processedMessage -> filter.test(processedMessage.getReceiverId(), processedMessage.getMessage()));
 	}
 
 	public static final class ProcessedMessage {
@@ -134,7 +132,7 @@ public class BFTDeterministicTest {
 		}
 	}
 
-	public void processNextMsgFilterBasedOnSenderReceiverAndMessage(Random random, Function<ProcessedMessage, Boolean> filter) {
+	public void processNextMsgFilterBasedOnSenderReceiverAndMessage(Random random, Predicate<ProcessedMessage> filter) {
 		List<ControlledMessage> possibleMsgs = network.peekNextMessages();
 		if (possibleMsgs.isEmpty()) {
 			throw new IllegalStateException("No messages available (Lost Responsiveness)");
@@ -144,16 +142,14 @@ public class BFTDeterministicTest {
 		ControlledMessage nextControlledMessage = possibleMsgs.get(indexOfNextMessage);
 		ChannelId channelId = nextControlledMessage.getChannelId();
 		Object msg = network.popNextMessage(channelId);
-	
+
 		int senderIndex = pks.indexOf(channelId.getSender());
 		int receiverIndex = pks.indexOf(channelId.getReceiver());
 
-		if (filter.apply(new ProcessedMessage(msg, senderIndex, receiverIndex))) {
+		if (filter.test(new ProcessedMessage(msg, senderIndex, receiverIndex))) {
 			nodes.get(receiverIndex).processNext(msg);
 		}
 	}
-
-
 
 	public SystemCounters getSystemCounters(int nodeIndex) {
 		return nodes.get(nodeIndex).getSystemCounters();

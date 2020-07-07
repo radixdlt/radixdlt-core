@@ -57,7 +57,7 @@ public final class DroppingLatencyProvider implements LatencyProvider {
 	}
 
 	@Override
-	public int nextLatency(MessageInTransit msg) {
+	public long nextLatency(MessageInTransit msg) {
 		if (droppers.stream().anyMatch(f -> f.test(msg))) {
 			return -1; // -1 Drops the message
 		}

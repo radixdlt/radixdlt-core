@@ -20,6 +20,8 @@ package com.radixdlt.consensus.deterministic.synchronous;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.deterministic.BFTDeterministicTest;
+import com.radixdlt.consensus.deterministic.BFTDeterministicTest.SyncAndTimeout;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -34,7 +36,7 @@ public class OneProposalDropperResponsiveTest {
 		final Map<View, Integer> proposalToDrop = new HashMap<>();
 		final Map<View, Integer> proposalCount = new HashMap<>();
 
-		final BFTDeterministicTest test = new BFTDeterministicTest(numNodes, true, random::nextBoolean);
+		final BFTDeterministicTest test = new BFTDeterministicTest(numNodes, SyncAndTimeout.SYNC, random::nextBoolean);
 		test.start();
 		for (int step = 0; step < 100000; step++) {
 			test.processNextMsg(random, (receiverId, msg) -> {

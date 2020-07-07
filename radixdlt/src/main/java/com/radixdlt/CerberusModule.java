@@ -53,6 +53,7 @@ import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralSyncVerticesRPCNetwork;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -143,7 +144,7 @@ public class CerberusModule extends AbstractModule {
 		TimeoutSender timeoutSender
 	) {
 		final int pacemakerTimeout = runtimeProperties.get("consensus.pacemaker_timeout_millis", 5000);
-		return new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender);
+		return new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender, ECPublicKey::verify);
 	}
 
 	@Provides
