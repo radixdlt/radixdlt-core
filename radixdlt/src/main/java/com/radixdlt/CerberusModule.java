@@ -28,6 +28,7 @@ import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochRx;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
+import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.LocalSyncRx;
 import com.radixdlt.consensus.InternalMessagePasser;
 import com.radixdlt.consensus.ProposerElectionFactory;
@@ -70,7 +71,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class CerberusModule extends AbstractModule {
-	private static final Logger log = LogManager.getLogger("Startup");
+	private static final Logger log = LogManager.getLogger();
 
 	private final RuntimeProperties runtimeProperties;
 
@@ -81,6 +82,7 @@ public class CerberusModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// dependencies
+		bind(HashSigner.class).toInstance(ECKeyPair::sign);
 		bind(TimeoutSender.class).to(ScheduledTimeoutSender.class);
 		bind(PacemakerRx.class).to(ScheduledTimeoutSender.class);
 

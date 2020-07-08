@@ -106,7 +106,10 @@ public class BFTDeterministicTest {
 	}
 
 	public void processNextMsg(Random random, BiPredicate<Integer, Object> filter) {
-		processNextMsgFilterBasedOnSenderReceiverAndMessage(random, processedMessage -> filter.test(processedMessage.getReceiverId(), processedMessage.getMessage()));
+		processNextMsgFilterBasedOnSenderReceiverAndMessage(
+			random,
+			processedMessage -> filter.test(processedMessage.getReceiverId(), processedMessage.getMessage())
+		);
 	}
 
 	public static final class ProcessedMessage {

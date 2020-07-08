@@ -112,7 +112,7 @@ public final class ControlledBFTNetwork {
 	}
 
 	private void putMessage(View v, ControlledMessage controlledMessage) {
-		messageQueue.push(v, controlledMessage);
+		messageQueue.add(v, controlledMessage);
 	}
 
 	public List<ControlledMessage> peekNextMessages() {

@@ -181,6 +181,7 @@ public class SimulatedBFTNetwork {
 		Hasher defaultHasher = new DefaultHasher();
 		Hasher nullHasher = d -> Hash.ZERO_HASH;
 		HashSigner nullSigner = (k, h) -> new ECDSASignature();
+		HashVerifier nullVerifier = (k, h, s) -> true;
 
 		Mempool mempool = new EmptyMempool();
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStores.get(key), mempool);
@@ -188,7 +189,7 @@ public class SimulatedBFTNetwork {
 		ScheduledTimeoutSender timeoutSender = timeoutSenders.get(key);
 		FixedTimeoutPacemaker pacemaker = pacemakers.get(key);
 		// PendingVotes needs a hasher that produces unique hashes so it can index things properly
-		PendingVotes pendingVotes = new PendingVotes(defaultHasher, ECPublicKey::verify);
+		PendingVotes pendingVotes = new PendingVotes(defaultHasher, nullVerifier);
 		EpochRx epochRx = () -> Observable.just(validatorSet).concatWith(Observable.never());
 		EpochManager epochManager = new EpochManager(
 			proposalGenerator,

@@ -52,6 +52,6 @@ public final class RandomLatencyProvider implements LatencyProvider {
 	@Override
 	public long nextLatency(MessageInTransit msg) {
 		rng.nextInt(1);
-		return minLatency + rng.nextInt((int)(maxLatency - minLatency) + 1);
+		return minLatency + rng.nextInt((int) (maxLatency - minLatency) + 1);
 	}
 }

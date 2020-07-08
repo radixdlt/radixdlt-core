@@ -31,6 +31,7 @@ public class ValidatorTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(Validator.class)
+			.withNonnullFields("nodeKey", "power")
 			.verify();
 	}
 

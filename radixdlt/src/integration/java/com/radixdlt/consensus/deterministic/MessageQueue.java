@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.radixdlt.consensus.View;
@@ -83,8 +85,8 @@ final class MessageQueue {
 		// Nothing here for now
 	}
 
-	void push(View v, ControlledMessage item) {
-		this.messageQueue.computeIfAbsent(v, k -> Maps.newHashMap()).computeIfAbsent(item.getChannelId(), k -> Lists.newLinkedList()).push(item);
+	void add(View v, ControlledMessage item) {
+		this.messageQueue.computeIfAbsent(v, k -> Maps.newHashMap()).computeIfAbsent(item.getChannelId(), k -> Lists.newLinkedList()).add(item);
 		if (this.minimumView == null || v.number() < this.minimumView.number()) {
 			this.minimumView = v;
 		}
@@ -92,7 +94,13 @@ final class MessageQueue {
 
 	ControlledMessage pop(ChannelId channelId) {
 		HashMap<ChannelId, LinkedList<ControlledMessage>> msgMap = this.messageQueue.get(this.minimumView);
+		if (msgMap == null) {
+			return painfulPop(channelId);
+		}
 		LinkedList<ControlledMessage> msgs = msgMap.get(channelId);
+		if (msgs == null) {
+			return painfulPop(channelId);
+		}
 		ControlledMessage item = msgs.pop();
 		if (msgs.isEmpty()) {
 			msgMap.remove(channelId);
@@ -102,6 +110,28 @@ final class MessageQueue {
 			}
 		}
 		return item;
+	}
+
+	// Really only here to work with processNextMsg(int, int, Class<?>) in BFTDeterministicTest
+	private ControlledMessage painfulPop(ChannelId channelId) {
+		List<Map.Entry<View, HashMap<ChannelId, LinkedList<ControlledMessage>>>> entries = Lists.newArrayList(this.messageQueue.entrySet());
+		Collections.sort(entries, Map.Entry.comparingByKey());
+		for (Map.Entry<View, HashMap<ChannelId, LinkedList<ControlledMessage>>> entry : entries) {
+			HashMap<ChannelId, LinkedList<ControlledMessage>> msgMap = entry.getValue();
+			LinkedList<ControlledMessage> msgs = msgMap.get(channelId);
+			if (msgs != null) {
+				ControlledMessage item = msgs.pop();
+				if (msgs.isEmpty()) {
+					msgMap.remove(channelId);
+					if (msgMap.isEmpty()) {
+						this.messageQueue.remove(entry.getKey());
+						// Can't affect minimumView if we are here
+					}
+				}
+				return item;
+			}
+		}
+		throw new NoSuchElementException();
 	}
 
 	List<ControlledMessage> lowestViewMessages() {
