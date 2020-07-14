@@ -46,7 +46,8 @@ public final class Panicker {
 		throw new IllegalStateException("Can't construct");
 	}
 
-	private static class PanicException extends RuntimeException {
+	@VisibleForTesting
+	static final class PanicException extends RuntimeException {
 		private PanicException() {
 			super("panic");
 		}
@@ -59,9 +60,9 @@ public final class Panicker {
 	 * @see Panicker#setExitOnPanic(boolean)
 	 */
 	@VisibleForTesting
-	public static class PanicError extends Error {
-		private PanicError(String msg) {
-			super(msg);
+	public static final class PanicError extends Error {
+		private PanicError(String msg, Throwable cause) {
+			super(msg, cause);
 		}
 	}
 
@@ -126,12 +127,12 @@ public final class Panicker {
 	 */
 	public static RuntimeException panic(Throwable t, String fmt, Object... fmtargs) {
 		// Not really worth the effort to make this more efficient, as we will be exiting here
-		FormattedMessage formattedMessage = new FormattedMessage("PANIC: " + fmt, fmtargs, t);
-		LogManager.getLogger().always().log(formattedMessage);
+		String message = new FormattedMessage("PANIC: " + fmt, fmtargs).getFormattedMessage();
+		LogManager.getLogger().always().withThrowable(t).log(message);
 		if (Panicker.exitOnPanic.get()) {
 			System.exit(PANIC_EXIT_STATUS);
 		} else {
-			throw new PanicError(formattedMessage.getFormattedMessage());
+			throw new PanicError(message, t);
 		}
 		return null;
 	}
@@ -152,7 +153,7 @@ public final class Panicker {
 	 * @return Dummy throwable so panic can be used in {@code Optional.orElseThrow(...)}
 	 */
 	public static RuntimeException panic(String fmt, Object... fmtargs) {
-		// Include a dummy exception so that the stack trace is included
+		// Include a dummy exception so that the stack trace is logged
 		return panic(new PanicException(), fmt, fmtargs);
 	}
 }
