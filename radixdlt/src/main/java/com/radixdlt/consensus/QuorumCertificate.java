@@ -110,7 +110,7 @@ public final class QuorumCertificate {
 		UInt256 totalPower = UInt256.ZERO;
 		ImmutableMap<ECPublicKey, Validator> validators = validatorSet.validatorsByKey();
 		List<Pair<Long, UInt256>> weightedTimes = Lists.newArrayList();
-		for (Map.Entry<ECPublicKey, Pair<Long, ECDSASignature>> e : getSignatures().getSignatures().entrySet()) {
+		for (Map.Entry<ECPublicKey, Pair<Long, ECDSASignature>> e : this.signatures.getSignatures().entrySet()) {
 			ECPublicKey thisKey = e.getKey();
 			Validator v = validators.get(thisKey);
 			if (v != null) {
@@ -128,7 +128,7 @@ public final class QuorumCertificate {
 		weightedTimes.sort(Comparator.comparing(Pair::getFirst));
 		for (Pair<Long, UInt256> w : weightedTimes) {
 			UInt256 weight = w.getSecond();
-			if (median.compareTo(weight) <= 0) {
+			if (median.compareTo(weight) < 0) {
 				return w.getFirst();
 			}
 			median = median.subtract(weight);
