@@ -17,6 +17,7 @@
 
 package com.radixdlt.middleware2;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -27,6 +28,7 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.utils.Panicker;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
@@ -54,13 +56,11 @@ public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 	@DsonOutput(Output.ALL)
 	private final QuorumCertificate commitQC;
 
-	CommittedAtom() {
-		// Serializer only
-		this.clientAtom = null;
-		this.commitQC = null;
-	}
-
-	public CommittedAtom(ClientAtom clientAtom, QuorumCertificate commitQC) {
+	@JsonCreator
+	public CommittedAtom(
+		@JsonProperty("atom") ClientAtom clientAtom,
+		@JsonProperty("commit_qc") QuorumCertificate commitQC
+	) {
 		if (!commitQC.getCommitted().isPresent()) {
 			throw new IllegalStateException("Specified QC is not for a commit!");
 		}
@@ -79,7 +79,7 @@ public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 	@Override
 	public VertexMetadata getVertexMetadata() {
 		// Constructor ensures that committed vertex always present
-		return this.commitQC.getCommitted().get();
+		return this.commitQC.getCommitted().orElseThrow(() -> Panicker.panic("Logic error in ComittedAtom"));
 	}
 
 	@Override
