@@ -33,7 +33,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.utils.SystemUtils;
+import com.radixdlt.utils.Panicker;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -478,7 +478,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	 */
 	public Optional<Vertex> commitVertex(QuorumCertificate commitQC) {
 		VertexMetadata commitMetadata = commitQC.getCommitted()
-			.orElseThrow(() -> SystemUtils.panic("Attempt to commit vertex without committed metadata: {}", commitQC));
+			.orElseThrow(() -> Panicker.panic("Attempt to commit vertex without committed metadata: {}", commitQC));
 		if (commitMetadata.getView().compareTo(this.getRoot().getView()) < 0) {
 			return Optional.empty();
 		}

@@ -36,7 +36,7 @@ import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
-import com.radixdlt.utils.SystemUtils;
+import com.radixdlt.utils.Panicker;
 
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.ArrayList;
@@ -92,7 +92,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 		StateSyncNetwork stateSyncNetwork
 	) {
 		if (epochChangeView.isGenesis()) {
-			SystemUtils.panic("Epoch change view must not be genesis.");
+			Panicker.panic("Epoch change view must not be genesis.");
 		}
 
 		this.radixEngine = Objects.requireNonNull(radixEngine);

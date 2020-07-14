@@ -36,6 +36,7 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.Panicker;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Optional;
@@ -105,7 +106,7 @@ public final class QuorumCertificate {
 	public long quorumTime(ValidatorSet validatorSet) {
 		// Note that signatures are not rechecked here.
 		// They are expected to be checked before the QC is formed.
-		// No real effort is made to ensure the QC is valid for this validator set.
+		// No effort is made to ensure the QC is valid for this validator set.
 		UInt256 totalPower = UInt256.ZERO;
 		ImmutableMap<ECPublicKey, Validator> validators = validatorSet.validatorsByKey();
 		List<Pair<Long, UInt256>> weightedTimes = Lists.newArrayList();
@@ -119,6 +120,7 @@ public final class QuorumCertificate {
 			}
 		}
 		if (totalPower.isZero()) {
+			// You probably used the wrong validator set
 			throw new IllegalStateException("Zero validator power for this QC");
 		}
 		UInt256 median = totalPower.shiftRight(); // Divide by 2
@@ -129,9 +131,9 @@ public final class QuorumCertificate {
 			if (median.compareTo(weight) <= 0) {
 				return w.getFirst();
 			}
-			median = median.subtract(w.getSecond());
+			median = median.subtract(weight);
 		}
-		throw new IllegalStateException("Logic error");
+		throw Panicker.panic("Logic error in quorumTime");
 	}
 
 	@Override
