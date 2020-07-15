@@ -20,6 +20,7 @@ package com.radixdlt.consensus.liveness;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.validators.ValidationState;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
@@ -59,11 +60,12 @@ public class FixedTimeoutPacemakerTest {
 
 	@Test
 	public void when_creating_pacemaker_with_invalid_timeout__then_exception_is_thrown() {
-		assertThatThrownBy(() -> new FixedTimeoutPacemaker(0, mock(FixedTimeoutPacemaker.TimeoutSender.class), ECPublicKey::verify))
+		TimeoutSender timeoutSender = mock(TimeoutSender.class);
+		assertThatThrownBy(() -> new FixedTimeoutPacemaker(0, timeoutSender, ECPublicKey::verify))
 			.isInstanceOf(IllegalArgumentException.class);
-		assertThatThrownBy(() -> new FixedTimeoutPacemaker(-1, mock(FixedTimeoutPacemaker.TimeoutSender.class), ECPublicKey::verify))
+		assertThatThrownBy(() -> new FixedTimeoutPacemaker(-1, timeoutSender, ECPublicKey::verify))
 			.isInstanceOf(IllegalArgumentException.class);
-		assertThatThrownBy(() -> new FixedTimeoutPacemaker(-100, mock(FixedTimeoutPacemaker.TimeoutSender.class), ECPublicKey::verify))
+		assertThatThrownBy(() -> new FixedTimeoutPacemaker(-100, timeoutSender, ECPublicKey::verify))
 			.isInstanceOf(IllegalArgumentException.class);
 	}
 

@@ -56,7 +56,8 @@ public class PanickerTest {
 
 	@Test
 	public void panicThrowableThrowsError() {
-		assertThatThrownBy(() -> Panicker.panic(new TestException(), "test %s", "message"))
+		TestException testException = new TestException();
+		assertThatThrownBy(() -> Panicker.panic(testException, "test %s", "message"))
 			.isInstanceOf(PanicError.class)
 			.hasMessageContaining("PANIC: test message")
 			.hasCauseInstanceOf(TestException.class);
