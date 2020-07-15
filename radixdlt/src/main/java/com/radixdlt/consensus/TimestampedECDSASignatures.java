@@ -92,7 +92,7 @@ public final class TimestampedECDSASignatures {
 	 * Returns the count of signatures.
 	 * @return The count of signatures
 	 */
-	public Object count() {
+	public int count() {
 		return this.keyToTimestampAndSignature.size();
 	}
 
