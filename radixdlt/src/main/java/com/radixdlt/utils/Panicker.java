@@ -128,7 +128,7 @@ public final class Panicker {
 	public static RuntimeException panic(Throwable t, String fmt, Object... fmtargs) {
 		// Not really worth the effort to make this more efficient, as we will be exiting here
 		String message = new FormattedMessage("PANIC: " + fmt, fmtargs).getFormattedMessage();
-		LogManager.getLogger().always().withThrowable(t).log(message);
+		LogManager.getLogger().atFatal().withThrowable(t).log(message);
 		if (Panicker.exitOnPanic.get()) {
 			System.exit(PANIC_EXIT_STATUS);
 		} else {
