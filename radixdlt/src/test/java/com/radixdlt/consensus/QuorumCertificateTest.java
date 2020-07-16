@@ -62,7 +62,7 @@ public class QuorumCertificateTest {
 		QuorumCertificate qc = makeQuorumCertificate(keys, n -> n);
 		ValidatorSet validatorSet = makeValidatorSet(keys, n -> UInt256.ZERO);
 
-		assertThatThrownBy(() -> qc.quorumTime(validatorSet))
+		assertThatThrownBy(() -> qc.quorumTimestamp(validatorSet))
 			.isInstanceOf(IllegalStateException.class);
 	}
 
@@ -72,7 +72,7 @@ public class QuorumCertificateTest {
 		QuorumCertificate qc = makeQuorumCertificate(keys, n -> n);
 		ValidatorSet validatorSet = makeValidatorSet(keys, n -> UInt256.ONE);
 
-		assertEquals(0L, qc.quorumTime(validatorSet));
+		assertEquals(0L, qc.quorumTimestamp(validatorSet));
 	}
 
 	@Test
@@ -81,7 +81,7 @@ public class QuorumCertificateTest {
 		QuorumCertificate qc = makeQuorumCertificate(keys, n -> n);
 		ValidatorSet validatorSet = makeValidatorSet(keys, n -> UInt256.ONE);
 
-		assertEquals(1L, qc.quorumTime(validatorSet));
+		assertEquals(1L, qc.quorumTimestamp(validatorSet));
 	}
 
 	@Test
@@ -94,7 +94,7 @@ public class QuorumCertificateTest {
 		// \sum_{i=0}^{99}{i} = 4,950, so median weight = 4,950 / 2 = 2,475
 		// \sum_{i=0}^{69}{i} = 2,415
 		// \sum_{i=0}^{70}{i} = 2,485, so median value = 70
-		assertEquals(70L, qc.quorumTime(validatorSet));
+		assertEquals(70L, qc.quorumTimestamp(validatorSet));
 	}
 
 	private ValidatorSet makeValidatorSet(Collection<ECPublicKey> keys, LongFunction<UInt256> weightFunction) {
