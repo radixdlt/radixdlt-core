@@ -103,7 +103,7 @@ public final class QuorumCertificate {
 		return signatures;
 	}
 
-	public long quorumTime(ValidatorSet validatorSet) {
+	public long quorumTimestamp(ValidatorSet validatorSet) {
 		// Note that signatures are not rechecked here.
 		// They are expected to be checked before the QC is formed.
 		// No effort is made to ensure the QC is valid for this validator set.
