@@ -36,6 +36,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.utils.Longs;
 
 import java.util.HashMap;
@@ -69,6 +70,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final SafetyRules safetyRules;
 	private final ValidatorSet validatorSet;
 	private final SystemCounters counters;
+	private final TimeSupplier timeSupplier;
 	private final Map<Hash, QuorumCertificate> unsyncedQCs = new HashMap<>();
 	private boolean synchedLog = false;
 
@@ -90,7 +92,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		@Named("self") ECKeyPair selfKey,
 		HashSigner signer,
 		ValidatorSet validatorSet,
-		SystemCounters counters
+		SystemCounters counters,
+		TimeSupplier timeSupplier
 	) {
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
 		this.mempool = Objects.requireNonNull(mempool);
@@ -105,6 +108,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.signer = Objects.requireNonNull(signer);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.counters = Objects.requireNonNull(counters);
+		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 	}
 
 	private String getShortName(EUID euid) {
@@ -240,7 +244,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 		final ECPublicKey currentLeader = this.proposerElection.getProposer(updatedView);
 		try {
-			final Vote vote = safetyRules.voteFor(proposedVertex, vertexMetadata);
+			final Vote vote = safetyRules.voteFor(proposedVertex, vertexMetadata, this.timeSupplier.currentTime());
 			log.trace("{}: PROPOSAL: Sending VOTE to {}: {}", this::getShortName, () -> this.getShortName(currentLeader.euid()), () -> vote);
 			sender.sendVote(vote, currentLeader);
 		} catch (SafetyViolationException e) {

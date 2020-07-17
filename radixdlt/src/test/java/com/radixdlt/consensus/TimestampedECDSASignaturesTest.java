@@ -53,7 +53,7 @@ public class TimestampedECDSASignaturesTest extends  SerializeObject<Timestamped
 
 	@Test
 	public void testSignatures() {
-		assertThat(create().getSignatures().size()).isEqualTo(2);
+		assertThat(create().getSignatures()).hasSize(2);
 	}
 
 	private static TimestampedECDSASignatures create() {

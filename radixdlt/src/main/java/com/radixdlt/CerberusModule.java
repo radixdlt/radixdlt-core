@@ -88,8 +88,9 @@ public class CerberusModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		// Signing/verifying
+		// Configuration
 		bind(HashSigner.class).toInstance(ECKeyPair::sign);
+		bind(Hasher.class).to(DefaultHasher.class);
 		bind(HashVerifier.class).toInstance(ECPublicKey::verify);
 
 		// Timed local messages
@@ -117,9 +118,6 @@ public class CerberusModule extends AbstractModule {
 		bind(BFTEventSender.class).to(MessageCentralBFTNetwork.class);
 		bind(ConsensusEventsRx.class).to(MessageCentralBFTNetwork.class);
 		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
-
-		// Configuration
-		bind(Hasher.class).to(DefaultHasher.class);
 	}
 
 	@Provides
@@ -142,7 +140,7 @@ public class CerberusModule extends AbstractModule {
 			validatorSet
 		) -> {
 			final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
-			final SafetyRules safetyRules = new SafetyRules(selfKey, SafetyState.initialState(), hasher, signer, timeSupplier);
+			final SafetyRules safetyRules = new SafetyRules(selfKey, SafetyState.initialState(), hasher, signer);
 			final PendingVotes pendingVotes = new PendingVotes(hasher, verifier);
 
 			return new BFTEventReducer(
@@ -158,7 +156,8 @@ public class CerberusModule extends AbstractModule {
 				selfKey,
 				signer,
 				validatorSet,
-				counters
+				counters,
+				timeSupplier
 			);
 		};
 	}

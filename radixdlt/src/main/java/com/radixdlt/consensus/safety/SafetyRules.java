@@ -31,8 +31,6 @@ import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.network.TimeSupplier;
-
 import java.util.Objects;
 import java.util.Optional;
 
@@ -43,21 +41,18 @@ public final class SafetyRules {
 	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
 	private final Hasher hasher;
 	private final HashSigner signer;
-	private final TimeSupplier timeSupplier;
 	private SafetyState state;
 
 	public SafetyRules(
 		ECKeyPair selfKey,
 		SafetyState initialState,
 		Hasher hasher,
-		HashSigner signer,
-		TimeSupplier timeSupplier
+		HashSigner signer
 	) {
 		this.selfKey = Objects.requireNonNull(selfKey);
 		this.state = Objects.requireNonNull(initialState);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.signer = Objects.requireNonNull(signer);
-		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 	}
 
 	/**
@@ -132,10 +127,11 @@ public final class SafetyRules {
 	 *
 	 * @param proposedVertex The proposed vertex
 	 * @param proposedVertexMetadata results of vertex execution
+	 * @param timestamp a timestamp for the vote, in epoch milliseconds
 	 * @return A vote result containing the vote and any committed vertices
 	 * @throws SafetyViolationException In case the vertex would violate a safety invariant
 	 */
-	public Vote voteFor(Vertex proposedVertex, VertexMetadata proposedVertexMetadata) throws SafetyViolationException {
+	public Vote voteFor(Vertex proposedVertex, VertexMetadata proposedVertexMetadata, long timestamp) throws SafetyViolationException {
 		// ensure vertex does not violate earlier votes
 		if (proposedVertex.getView().compareTo(this.state.getLastVotedView()) <= 0) {
 			throw new SafetyViolationException(proposedVertex, this.state, String.format(
@@ -152,7 +148,7 @@ public final class SafetyRules {
 		safetyStateBuilder.lastVotedView(proposedVertex.getView());
 
 		final VoteData voteData = constructVoteData(proposedVertex, proposedVertexMetadata);
-		final TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, this.timeSupplier.currentTime());
+		final TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, timestamp);
 
 		final Hash voteHash = hasher.hash(timestampedVoteData);
 

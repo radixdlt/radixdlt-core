@@ -131,7 +131,7 @@ public class SimulationNodes {
 		BFTFactory bftFactory =
 			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) -> {
 				final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
-				final SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), nullHasher, nullSigner, System::currentTimeMillis);
+				final SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), nullHasher, nullSigner);
 				final PendingVotes pendingVotes = new PendingVotes(defaultHasher, nullVerifier);
 
 				return new BFTEventReducer(
@@ -147,7 +147,8 @@ public class SimulationNodes {
 					key,
 					nullSigner,
 					validatorSet,
-					counters.get(key)
+					counters.get(key),
+					System::currentTimeMillis
 				);
 			};
 
