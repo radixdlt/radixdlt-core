@@ -43,7 +43,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.atoms.AtomDependencyNotFoundException;
@@ -59,7 +62,9 @@ import org.radix.validation.ConstraintMachineValidationException;
  * TODO: Most of the logic here should go into RadixEngine itself
  */
 public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
-
+	
+	private static final int BATCH_SIZE = 100;
+	
 	public interface CommittedStateSyncSender {
 		void sendCommittedStateSync(long stateVersion, Object opaque);
 	}
@@ -73,6 +78,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
 	private final View epochChangeView;
+	private final SyncManager syncManager;
 
 	// TODO: Remove the following
 	private final Object lock = new Object();
@@ -101,6 +107,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 		this.epochChangeView = epochChangeView;
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
+		this.syncManager = new SyncManager(this::execute, this.committedAtomsStore::getStateVersion, BATCH_SIZE, 10);
 	}
 
 	/**
@@ -117,7 +124,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 				// TODO: never make it into the radix engine due to state errors. This is because we only check
 				// TODO: validity on commit rather than on proposal/prepare.
 				// TODO: remove 100 hardcode limit
-				List<CommittedAtom> storedCommittedAtoms = committedAtomsStore.getCommittedAtoms(stateVersion, 100);
+				List<CommittedAtom> storedCommittedAtoms = committedAtomsStore.getCommittedAtoms(stateVersion, BATCH_SIZE);
 
 				// TODO: Remove
 				final List<CommittedAtom> copy;
@@ -141,11 +148,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 			.subscribe(syncResponse -> {
 				// TODO: Check validity of response
 				log.debug("SYNC_RESPONSE: size: {}", syncResponse.size());
-				for (CommittedAtom committedAtom : syncResponse) {
-					if (committedAtom.getVertexMetadata().getStateVersion() > this.committedAtomsStore.getStateVersion()) {
-						this.execute(committedAtom);
-					}
-				}
+				syncManager.syncAtoms(syncResponse);
 			});
 	}
 
@@ -162,15 +165,19 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 			return true;
 		}
 
-		// TODO: better randomization of peer selection
-		Peer peer = target.stream()
-			.map(pk -> addressBook.peer(pk.euid()))
-			.filter(Optional::isPresent)
-			.map(Optional::get)
-			.filter(Peer::hasSystem)
-			.findFirst()
-			.orElseThrow(() -> new RuntimeException("Unable to find peer"));
-		stateSyncNetwork.sendSyncRequest(peer, currentStateVersion);
+		syncManager.syncToVersion(targetStateVersion, version -> {
+			List<Peer> peers = target.stream()
+					.map(pk -> addressBook.peer(pk.euid()))
+					.filter(Optional::isPresent)
+					.map(Optional::get)
+					.filter(Peer::hasSystem)
+					.collect(Collectors.toList());
+			Peer peer = peers.stream()
+					.skip(ThreadLocalRandom.current().nextInt(peers.size()))
+					.findFirst()
+					.orElseThrow(() -> new RuntimeException("Unable to find peer"));
+			stateSyncNetwork.sendSyncRequest(peer, version);
+		});
 
 		committedAtomsStore.lastStoredAtom()
 			.observeOn(Schedulers.io())
