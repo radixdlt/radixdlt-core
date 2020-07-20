@@ -95,11 +95,9 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 				log.info("SYNC_REQUEST: {} {}", syncRequest, this.committedAtomsStore.getStateVersion());
 				Peer peer = syncRequest.getPeer();
 				long stateVersion = syncRequest.getStateVersion();
-				// TODO: This may still return an empty list as we still count state versions
-				// for atoms which
-				// TODO: never make it into the radix engine due to state errors. This is
-				// because we only check
-				// TODO: validity on commit rather than on proposal/prepare.
+				// TODO: This may still return an empty list as we still count state versions for atoms which
+				// TODO: never make it into the radix engine due to state errors. This is because we only check
+				// TODO: validity on commit rather than on proposal/prepare.				
 				List<CommittedAtom> committedAtoms = committedAtomsStore.getCommittedAtoms(stateVersion, BATCH_SIZE);
 				log.info("SYNC_REQUEST: SENDING_RESPONSE {}", committedAtoms);
 				stateSyncNetwork.sendSyncResponse(peer, committedAtoms);
@@ -147,7 +145,7 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 			.firstOrError()
 			.ignoreElement()
 			.subscribe(() -> committedStateSyncSender.sendCommittedStateSync(targetStateVersion, opaque));		
-		
+
 		return false;
 	}
 
