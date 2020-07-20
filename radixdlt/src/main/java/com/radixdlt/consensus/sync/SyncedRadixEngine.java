@@ -62,7 +62,6 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	}
 
 	private static final Logger log = LogManager.getLogger();
-
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final CommittedAtomsStore committedAtomsStore;
 	private final CommittedStateSyncSender committedStateSyncSender;
@@ -77,7 +76,7 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 		CommittedStateSyncSender committedStateSyncSender,
 		AddressBook addressBook,
 		StateSyncNetwork stateSyncNetwork
-	){
+	) {
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.committedAtomsStore = Objects.requireNonNull(committedAtomsStore);
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
@@ -90,9 +89,9 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	 * Start the service
 	 */
 	public void start() {
-		stateSyncNetwork.syncRequests().
-			observeOn(Schedulers.io()).
-			subscribe(syncRequest -> {
+		stateSyncNetwork.syncRequests()
+			.observeOn(Schedulers.io())
+			.subscribe(syncRequest -> {
 				log.info("SYNC_REQUEST: {} {}", syncRequest, this.committedAtomsStore.getStateVersion());
 				Peer peer = syncRequest.getPeer();
 				long stateVersion = syncRequest.getStateVersion();
@@ -106,9 +105,10 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 				stateSyncNetwork.sendSyncResponse(peer, committedAtoms);
 			});
 
-		stateSyncNetwork.syncResponses().
-			observeOn(Schedulers.io()).
-			subscribe(syncResponse -> {
+		stateSyncNetwork.syncResponses()
+			.observeOn(Schedulers.io())
+			.subscribe(syncResponse -> {
+				// TODO: Check validity of response
 				log.info("SYNC_RESPONSE: {}", syncResponse);
 				syncManager.syncAtoms(syncResponse);
 		});
@@ -120,6 +120,7 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 			// TODO: relax this in future when we have non-validator nodes
 			throw new IllegalArgumentException("target must not be empty");
 		}
+
 		final long currentStateVersion = committedAtomsStore.getStateVersion();
 		if (targetStateVersion <= currentStateVersion) {
 			return true;
@@ -140,19 +141,18 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 		});
 
 		committedAtomsStore.lastStoredAtom()
-				.observeOn(Schedulers.io())
-				.map(e -> e.getAtom().getVertexMetadata().getStateVersion())
-				.filter(stateVersion -> stateVersion >= targetStateVersion)
-				.firstOrError()
-				.ignoreElement()
-				.subscribe(() -> committedStateSyncSender.sendCommittedStateSync(targetStateVersion, opaque));		
+			.observeOn(Schedulers.io())
+			.map(e -> e.getAtom().getVertexMetadata().getStateVersion())
+			.filter(stateVersion -> stateVersion >= targetStateVersion)
+			.firstOrError()
+			.ignoreElement()
+			.subscribe(() -> committedStateSyncSender.sendCommittedStateSync(targetStateVersion, opaque));		
 		
 		return false;
 	}
 
 	/**
 	 * Add an atom to the committed store
-	 *
 	 * @param atom the atom to commit
 	 */
 	@Override
