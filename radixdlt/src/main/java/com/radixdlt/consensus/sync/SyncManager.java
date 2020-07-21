@@ -34,12 +34,8 @@ public class SyncManager {
 	private long targetVersion = -1;
 	private ScheduledFuture<?> timeoutChecker;
 
-	public SyncManager(
-		Consumer<CommittedAtom> atomProcessor,
-		LongSupplier versionProvider,
-		long batchSize,
-		long patience
-	) {
+	public SyncManager(Consumer<CommittedAtom> atomProcessor, LongSupplier versionProvider, long batchSize,
+			long patience) {
 		this.atomProcessor = atomProcessor;
 		this.versionProvider = versionProvider;
 		this.batchSize = batchSize;
@@ -69,7 +65,7 @@ public class SyncManager {
 		executorService.execute(this::applyAtoms);
 	}
 
-	private void applyAtoms() {		
+	private void applyAtoms() {
 		Iterator<CommittedAtom> it = commitedAtoms.iterator();
 		while (it.hasNext()) {
 			CommittedAtom crtAtom = it.next();
@@ -77,7 +73,7 @@ public class SyncManager {
 			if (atomVersion <= versionProvider.getAsLong()) {
 				it.remove();
 			} else if (atomVersion == versionProvider.getAsLong() + 1) {
-				atomProcessor.accept(crtAtom);				
+				atomProcessor.accept(crtAtom);
 				it.remove();
 			} else {
 				break;
@@ -87,14 +83,14 @@ public class SyncManager {
 			active.set(false);
 			commitedAtoms.clear();
 			if(timeoutChecker != null) { //should not be null but doesn't hurts
-				timeoutChecker.cancel(false);	
+				timeoutChecker.cancel(false);
 			}
 		}
 	}
 
 	private void sendSyncRequests() {
 		long crtVersion = versionProvider.getAsLong();
-		if(crtVersion >= targetVersion) {
+		if(crtVersion < targetVersion) {
 			return;
 		}
 		long size = ((targetVersion - crtVersion) / batchSize);
