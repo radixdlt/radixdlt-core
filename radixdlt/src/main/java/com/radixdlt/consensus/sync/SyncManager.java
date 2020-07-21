@@ -35,8 +35,12 @@ public class SyncManager {
 	private long targetVersion = -1;
 	private Instant lastProgress = Instant.MIN;
 
-	public SyncManager(Consumer<CommittedAtom> atomProcessor, LongSupplier versionProvider, long batchSize,
-			long patience) {
+	public SyncManager(
+		Consumer<CommittedAtom> atomProcessor,
+		LongSupplier versionProvider,
+		long batchSize,
+		long patience
+	) {
 		this.atomProcessor = atomProcessor;
 		this.versionProvider = versionProvider;
 		this.batchSize = batchSize;

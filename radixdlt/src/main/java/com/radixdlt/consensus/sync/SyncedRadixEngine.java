@@ -97,7 +97,7 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 				long stateVersion = syncRequest.getStateVersion();
 				// TODO: This may still return an empty list as we still count state versions for atoms which
 				// TODO: never make it into the radix engine due to state errors. This is because we only check
-				// TODO: validity on commit rather than on proposal/prepare.				
+				// TODO: validity on commit rather than on proposal/prepare.
 				List<CommittedAtom> committedAtoms = committedAtomsStore.getCommittedAtoms(stateVersion, BATCH_SIZE);
 				log.info("SYNC_REQUEST: SENDING_RESPONSE {}", committedAtoms);
 				stateSyncNetwork.sendSyncResponse(peer, committedAtoms);
@@ -144,7 +144,7 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 			.filter(stateVersion -> stateVersion >= targetStateVersion)
 			.firstOrError()
 			.ignoreElement()
-			.subscribe(() -> committedStateSyncSender.sendCommittedStateSync(targetStateVersion, opaque));		
+			.subscribe(() -> committedStateSyncSender.sendCommittedStateSync(targetStateVersion, opaque));
 
 		return false;
 	}
