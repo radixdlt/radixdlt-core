@@ -21,22 +21,25 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.radixdlt.EpochChangeSender;
-import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.reactivex.rxjava3.subjects.BehaviorSubject;
+import io.reactivex.rxjava3.subjects.Subject;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -49,12 +52,6 @@ import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.atoms.AtomDependencyNotFoundException;
-import org.radix.atoms.events.AtomExceptionEvent;
-import org.radix.atoms.particles.conflict.ParticleConflict;
-import org.radix.atoms.particles.conflict.ParticleConflictException;
-import org.radix.events.Events;
-import org.radix.validation.ConstraintMachineValidationException;
 
 /**
  * A service which synchronizes the radix engine committed state between peers.
@@ -62,52 +59,66 @@ import org.radix.validation.ConstraintMachineValidationException;
  * TODO: Most of the logic here should go into RadixEngine itself
  */
 public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
-	
+	public interface SyncedRadixEngineEventSender {
+		void sendStored(CommittedAtom committedAtom, ImmutableSet<EUID> indicies);
+		void sendStoredFailure(CommittedAtom committedAtom, RadixEngineException e);
+	}
+
 	private static final int BATCH_SIZE = 100;
-	
+
 	public interface CommittedStateSyncSender {
 		void sendCommittedStateSync(long stateVersion, Object opaque);
 	}
 
 	private static final Logger log = LogManager.getLogger();
+	private final Mempool mempool;
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final CommittedAtomsStore committedAtomsStore;
 	private final CommittedStateSyncSender committedStateSyncSender;
 	private final EpochChangeSender epochChangeSender;
-	private final Function<Long, ValidatorSet> validatorSetMapping;
+	private final SyncedRadixEngineEventSender engineEventSender;
+	private final Function<Long, BFTValidatorSet> validatorSetMapping;
 	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
 	private final View epochChangeView;
 	private final SyncManager syncManager;
+	private final SystemCounters counters;
 
 	// TODO: Remove the following
 	private final Object lock = new Object();
-	private final LinkedList<CommittedAtom> emptyCommittedAtoms = new LinkedList<>();
+	private final LinkedList<CommittedAtom> unstoredCommittedAtoms = new LinkedList<>();
+	private final Subject<CommittedAtom> lastStoredAtom = BehaviorSubject.create();
 	private VertexMetadata lastEpochChange = null;
 
 	public SyncedRadixEngine(
+		Mempool mempool,
 		RadixEngine<LedgerAtom> radixEngine,
 		CommittedAtomsStore committedAtomsStore,
 		CommittedStateSyncSender committedStateSyncSender,
 		EpochChangeSender epochChangeSender,
-		Function<Long, ValidatorSet> validatorSetMapping,
+		SyncedRadixEngineEventSender engineEventSender,
+		Function<Long, BFTValidatorSet> validatorSetMapping,
 		View epochChangeView,
 		AddressBook addressBook,
-		StateSyncNetwork stateSyncNetwork
+		StateSyncNetwork stateSyncNetwork,
+		SystemCounters counters
 	) {
 		if (epochChangeView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
 		}
 
+		this.mempool = Objects.requireNonNull(mempool);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.committedAtomsStore = Objects.requireNonNull(committedAtomsStore);
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
 		this.epochChangeSender = Objects.requireNonNull(epochChangeSender);
+		this.engineEventSender = Objects.requireNonNull(engineEventSender);
 		this.validatorSetMapping = validatorSetMapping;
 		this.epochChangeView = epochChangeView;
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 		this.syncManager = new SyncManager(this::execute, this.committedAtomsStore::getStateVersion, BATCH_SIZE, 10);
+		this.counters = Objects.requireNonNull(counters);
 	}
 
 	/**
@@ -129,7 +140,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 				// TODO: Remove
 				final List<CommittedAtom> copy;
 				synchronized (lock) {
-					copy = new ArrayList<>(emptyCommittedAtoms);
+					copy = new ArrayList<>(unstoredCommittedAtoms);
 				}
 
 				List<CommittedAtom> committedAtoms = Streams.concat(
@@ -172,16 +183,16 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 					.map(Optional::get)
 					.filter(Peer::hasSystem)
 					.collect(Collectors.toList());
-			Peer peer = peers.stream()
-					.skip(ThreadLocalRandom.current().nextInt(peers.size()))
-					.findFirst()
-					.orElseThrow(() -> new RuntimeException("Unable to find peer"));
+			if (peers.isEmpty()) {
+				throw new IllegalStateException("Unable to find peer");
+			}
+			Peer peer = peers.get(ThreadLocalRandom.current().nextInt(peers.size()));
 			stateSyncNetwork.sendSyncRequest(peer, version);
 		});
 
-		committedAtomsStore.lastStoredAtom()
+		this.lastStoredAtom
 			.observeOn(Schedulers.io())
-			.map(e -> e.getAtom().getVertexMetadata().getStateVersion())
+			.map(atom -> atom.getVertexMetadata().getStateVersion())
 			.filter(stateVersion -> stateVersion >= targetStateVersion)
 			.firstOrError()
 			.ignoreElement()
@@ -201,26 +212,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 		// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
 
 		// TODO: move VIRTUAL_STATE_CONFLICT to static check
-		if (e.getErrorCode() == RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT) {
-			ConstraintMachineValidationException exception
-				= new ConstraintMachineValidationException(atom.getClientAtom(), "Virtual state conflict", e.getDataPointer());
-			Events.getInstance().broadcast(new AtomExceptionEvent(exception, atom.getAID()));
-		} else if (e.getErrorCode() == RadixEngineErrorCode.STATE_CONFLICT) {
-			final ParticleConflictException conflict = new ParticleConflictException(
-				new ParticleConflict(e.getDataPointer(), ImmutableSet.of(atom.getAID(), e.getRelated().getAID())
-				));
-			AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, atom.getAID());
-			Events.getInstance().broadcast(atomExceptionEvent);
-		} else if (e.getErrorCode() == RadixEngineErrorCode.MISSING_DEPENDENCY) {
-			final AtomDependencyNotFoundException notFoundException =
-				new AtomDependencyNotFoundException(
-					String.format("Atom has missing dependencies in transitions: %s", e.getDataPointer().toString()),
-					e.getDataPointer()
-				);
-
-			AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, atom.getAID());
-			Events.getInstance().broadcast(atomExceptionEvent);
-		}
+		engineEventSender.sendStoredFailure(atom, e);
 	}
 
 	/**
@@ -231,7 +223,15 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 	public void execute(CommittedAtom atom) {
 		// TODO: remove lock
 		synchronized (lock) {
-			// TODO: need to implement idempotency
+			counters.increment(CounterType.LEDGER_PROCESSED);
+
+			final long stateVersion = atom.getVertexMetadata().getStateVersion();
+
+			if (stateVersion != 0 && stateVersion <= committedAtomsStore.getStateVersion()) {
+				return;
+			}
+
+			counters.set(CounterType.LEDGER_STATE_VERSION, stateVersion);
 
 			// TODO: HACK
 			// TODO: Remove and move epoch change logic into RadixEngine
@@ -241,16 +241,23 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 				try {
 					// TODO: execute list of commands instead
 					this.radixEngine.checkAndStore(atom);
+
+					// TODO: cleanup and move this logic to a better spot
+					final ImmutableSet<EUID> indicies = committedAtomsStore.getIndicies(atom);
+					this.engineEventSender.sendStored(atom, indicies);
+
 				} catch (RadixEngineException e) {
 					handleRadixEngineException(atom, e);
+					this.unstoredCommittedAtoms.add(atom);
 				}
+
+				this.lastStoredAtom.onNext(atom);
+				this.mempool.removeCommittedAtom(atom.getAID());
 			} else if (atom.getVertexMetadata().isEndOfEpoch()) {
 				// TODO: HACK
 				// TODO: Remove and move epoch change logic into RadixEngine
-				if (emptyCommittedAtoms.isEmpty()
-					|| emptyCommittedAtoms.getLast().getVertexMetadata().getStateVersion() != atom.getVertexMetadata().getStateVersion()) {
-					emptyCommittedAtoms.add(atom);
-				}
+				this.unstoredCommittedAtoms.add(atom);
+				this.lastStoredAtom.onNext(atom);
 			}
 
 			// TODO: Move outside of syncedRadixEngine to a more generic syncing layer
