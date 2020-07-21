@@ -34,8 +34,12 @@ public class SyncManager {
 	private long targetVersion = -1;
 	private ScheduledFuture<?> timeoutChecker;
 
-	public SyncManager(Consumer<CommittedAtom> atomProcessor, LongSupplier versionProvider, long batchSize,
-			long patience) {
+	public SyncManager(
+		Consumer<CommittedAtom> atomProcessor,
+		LongSupplier versionProvider,
+		long batchSize,
+		long patience
+	) {
 		this.atomProcessor = atomProcessor;
 		this.versionProvider = versionProvider;
 		this.batchSize = batchSize;
