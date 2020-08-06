@@ -32,8 +32,8 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
+import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -42,7 +42,6 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.utils.UInt256;
-import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,6 +50,7 @@ public class BFTBuilderTest {
 	private BFTEventSender eventSender;
 	private EndOfEpochSender endOfEpochSender;
 	private SystemCounters counters;
+	private BFTInfoSender infoSender;
 	private BFTValidatorSet validatorSet;
 	private ProposerElection proposerElection;
 	private Hasher hasher = new DefaultHasher();
@@ -74,6 +74,7 @@ public class BFTBuilderTest {
 		pacemaker = mock(Pacemaker.class);
 		vertexStore = mock(VertexStore.class);
 		self = mock(BFTNode.class);
+		infoSender = mock(BFTInfoSender.class);
 	}
 
 	@Test
@@ -87,6 +88,8 @@ public class BFTBuilderTest {
 			.eventSender(eventSender)
 			.endOfEpochSender(endOfEpochSender)
 			.counters(counters)
+			.infoSender(infoSender)
+			.timeSupplier(System::currentTimeMillis)
 			.validatorSet(validatorSet)
 			.proposerElection(proposerElection)
 			.hasher(hasher)
@@ -99,7 +102,7 @@ public class BFTBuilderTest {
 
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getAuthor()).thenReturn(self);
-		when(proposal.getSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
+		when(proposal.getSignature()).thenReturn(mock(ECDSASignature.class));
 		processor.processProposal(proposal);
 
 		verify(verifier, times(1)).verify(any(), any(), any());
@@ -116,6 +119,8 @@ public class BFTBuilderTest {
 			.eventSender(eventSender)
 			.endOfEpochSender(endOfEpochSender)
 			.counters(counters)
+			.infoSender(infoSender)
+			.timeSupplier(System::currentTimeMillis)
 			.validatorSet(validatorSet)
 			.proposerElection(proposerElection)
 			.hasher(hasher)
@@ -129,7 +134,7 @@ public class BFTBuilderTest {
 
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getAuthor()).thenReturn(self);
-		when(proposal.getSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
+		when(proposal.getSignature()).thenReturn(mock(ECDSASignature.class));
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getView()).thenReturn(View.of(1));
 		when(proposal.getVertex()).thenReturn(vertex);

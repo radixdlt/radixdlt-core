@@ -24,7 +24,6 @@ import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
-import com.radixdlt.consensus.View;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
@@ -521,7 +520,8 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		}
 
 		for (Vertex committed : path) {
-			CommittedAtom committedAtom = new CommittedAtom(committed.getAtom(), commitMetadata);
+			long timestamp = committed.getQC().getTimestampedSignatures().weightedTimestamp();
+			CommittedAtom committedAtom = new CommittedAtom(committed.getAtom(), commitMetadata, timestamp);
 			this.counters.increment(CounterType.BFT_PROCESSED);
 			syncedStateComputer.execute(committedAtom);
 

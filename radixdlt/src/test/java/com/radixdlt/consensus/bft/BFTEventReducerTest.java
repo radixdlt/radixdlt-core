@@ -24,9 +24,9 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.identifiers.AID;
@@ -46,6 +46,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -66,6 +67,7 @@ public class BFTEventReducerTest {
 	private VertexStore vertexStore;
 	private BFTValidatorSet validatorSet;
 	private SystemCounters counters;
+	private BFTInfoSender infoSender;
 	private BFTNode self;
 
 	@Before
@@ -80,6 +82,7 @@ public class BFTEventReducerTest {
 		this.proposerElection = mock(ProposerElection.class);
 		this.validatorSet = mock(BFTValidatorSet.class);
 		this.counters = mock(SystemCounters.class);
+		this.infoSender = mock(BFTInfoSender.class);
 		this.self = mock(BFTNode.class);
 
 		this.reducer = new BFTEventReducer(
@@ -93,7 +96,9 @@ public class BFTEventReducerTest {
 			pendingVotes,
 			proposerElection,
 			validatorSet,
-			counters
+			counters,
+			infoSender,
+			System::currentTimeMillis
 		);
 	}
 
@@ -269,7 +274,7 @@ public class BFTEventReducerTest {
 
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		Vote vote = mock(Vote.class);
-		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex), any());
+		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex), any(), anyLong(), anyLong());
 		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
 		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
@@ -305,7 +310,7 @@ public class BFTEventReducerTest {
 
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		Vote vote = mock(Vote.class);
-		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex), any());
+		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex), any(), anyLong(), anyLong());
 		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
 		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
 
@@ -339,7 +344,7 @@ public class BFTEventReducerTest {
 
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		Vote vote = mock(Vote.class);
-		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex), any());
+		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex), any(), anyLong(), anyLong());
 		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
 		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
 
