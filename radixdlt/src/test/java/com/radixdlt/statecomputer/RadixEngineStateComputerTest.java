@@ -171,7 +171,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	@Test
-	public void when_commit_vertex_with_malformed_command__then_is_available_on_query() throws SerializationException {
+	public void when_commit_vertex_with_malformed_command__then_is_available_on_query() throws DeserializeException {
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).then(i -> View.of(50));
 		PreparedCommand preparedCommand = mock(PreparedCommand.class);
@@ -191,7 +191,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	@Test
-	public void when_commit_command_with_registered_particle__then_should_be_in_next_validator_set() throws SerializationException {
+	public void when_commit_command_with_registered_particle__then_should_be_in_next_validator_set() throws DeserializeException {
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).then(i -> View.of(100));
 		PreparedCommand preparedCommand = mock(PreparedCommand.class);
@@ -221,7 +221,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	@Test
-	public void when_commit_command_with_unregistered_particle__then_should_not_be_in_next_validator_set() throws SerializationException {
+	public void when_commit_command_with_unregistered_particle__then_should_not_be_in_next_validator_set() throws DeserializeException {
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).then(i -> View.of(100));
 		PreparedCommand preparedCommand = mock(PreparedCommand.class);
