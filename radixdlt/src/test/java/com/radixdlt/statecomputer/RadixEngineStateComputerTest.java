@@ -171,9 +171,7 @@ public class RadixEngineStateComputerTest {
 		when(preparedCommand.getStateVersion()).thenReturn(1L);
 		when(preparedCommand.isEndOfEpoch()).thenReturn(false);
 		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
-
-		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new DeserializeException(""));
-
+		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new SerializationException(""));
 		Command cmd = new Command(new byte[] {0, 1});
 		assertThat(stateComputer.commit(cmd, vertexMetadata)).isEmpty();
 		assertThat(stateComputer.getCommittedCommands(0, 1))
