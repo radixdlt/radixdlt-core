@@ -1,3 +1,18 @@
+# (C) Copyright 2020 Radix DLT Ltd
+#
+# Radix DLT Ltd licenses this file to you under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except in
+# compliance with the License.  You may obtain a copy of the
+# License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied.  See the License for the specific
+# language governing permissions and limitations under the License.
+
 REGISTRY ?= eu.gcr.io/dev-container-repo
 
 all:
@@ -18,20 +33,3 @@ package: build
 .PHONY: publish
 publish: package
 	docker push $(REPO):$(TAG)
-
-.PHONY: multi-arch-package
-multi-arch-package: build
-	docker build -t $(REPO):$(TAG)-amd64 --build-arg ARCH=amd64 -f docker/Dockerfile.core ./docker
-	docker build -t $(REPO):$(TAG)-arm32v6 --build-arg ARCH=arm32v7 -f docker/Dockerfile.core ./docker
-	docker build -t $(REPO):$(TAG)-arm64v8 --build-arg ARCH=arm64v8 -f docker/Dockerfile.core ./docker
-
-.PHONY: multi-arch-publish
-multi-arch-publish: multi-arch-package
-	docker push $(REPO):$(TAG)-amd64
-	docker push $(REPO):$(TAG)-arm32v6
-	docker push $(REPO):$(TAG)-arm64v8
-	docker manifest create $(REPO):$(TAG) \
-		$(REPO):$(TAG)-amd64 \
-		$(REPO):$(TAG)-arm32v6 \
-		$(REPO):$(TAG)-arm64v8
-	docker manifest push --purge $(REPO):$(TAG)
