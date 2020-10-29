@@ -26,7 +26,7 @@ multi-arch-package: build
 	docker build -t $(REPO):$(TAG)-arm64v8 --build-arg ARCH=arm64v8 -f docker/Dockerfile.core ./docker
 
 .PHONY: multi-arch-publish
-multi-arch-publish:
+multi-arch-publish: multi-arch-package
 	docker push $(REPO):$(TAG)-amd64
 	docker push $(REPO):$(TAG)-arm32v6
 	docker push $(REPO):$(TAG)-arm64v8
