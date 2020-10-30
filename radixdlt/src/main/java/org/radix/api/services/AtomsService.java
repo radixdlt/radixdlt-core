@@ -33,9 +33,10 @@ import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomWithResu
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import com.radixdlt.middleware2.ClientAtom;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -52,6 +53,9 @@ import com.radixdlt.store.LedgerEntryStore;
 import java.util.concurrent.atomic.AtomicReference;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.radix.api.AtomQuery;
 import org.radix.api.observable.AtomEventObserver;
@@ -72,8 +76,10 @@ public class AtomsService {
 	);
 
 	private final Set<AtomEventObserver> atomEventObservers = Collections.newSetFromMap(new ConcurrentHashMap<>());
-	private final ConcurrentHashMap<AID, List<AtomStatusListener>> singleAtomObservers = new ConcurrentHashMap<>();
-	private final ConcurrentHashMap<AID, List<SingleAtomListener>> deleteOnEventSingleAtomObservers = new ConcurrentHashMap<>();
+	private final Object singleAtomObserversLock = new Object();
+	private final Map<AID, List<AtomStatusListener>> singleAtomObservers = new HashMap<>();
+	private final Object deleteOnEventSingleAtomObserversLock = new Object();
+	private final Map<AID, List<SingleAtomListener>> deleteOnEventSingleAtomObservers = new HashMap<>();
 
 	private final Serialization serialization = DefaultSerialization.getInstance();
 
@@ -106,37 +112,36 @@ public class AtomsService {
 	private void processExecutedCommand(CommittedAtomWithResult committedAtomWithResult) {
 		CommittedAtom committedAtom = committedAtomWithResult.getCommittedAtom();
 		committedAtomWithResult.ifSuccess(indicies -> this.atomEventObservers.forEach(observer -> observer.tryNext(committedAtom, indicies)));
-		for (SingleAtomListener subscriber : this.deleteOnEventSingleAtomObservers.getOrDefault(committedAtom.getAID(), Collections.emptyList())) {
+		for (SingleAtomListener subscriber : getDeleteOnEventListeners(committedAtom.getAID())) {
 			committedAtomWithResult
 				.ifSuccess(indicies -> subscriber.onStored())
 				.ifError(subscriber::onStoredFailure);
 		}
-		for (AtomStatusListener atomStatusListener : this.singleAtomObservers.getOrDefault(committedAtom.getAID(), Collections.emptyList())) {
+		for (AtomStatusListener atomStatusListener : getAtomStatusListeners(committedAtom.getAID())) {
 			committedAtomWithResult
 				.ifSuccess(indicies -> atomStatusListener.onStored(committedAtom))
 				.ifError(e -> atomStatusListener.onStoredFailure(committedAtom, e));
 		}
 	}
 
-
 	private void processSubmissionFailure(SubmissionFailure e) {
-		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(e.getClientAtom().getAID());
+		List<SingleAtomListener> subscribers = removeDeleteOnEventListeners(e.getClientAtom().getAID());
 		if (subscribers != null) {
 			subscribers.forEach(subscriber -> subscriber.onError(e.getClientAtom().getAID(), e.getException()));
 		}
 
-		for (AtomStatusListener singleAtomListener : this.singleAtomObservers.getOrDefault(e.getClientAtom().getAID(), Collections.emptyList())) {
+		for (AtomStatusListener singleAtomListener : getAtomStatusListeners(e.getClientAtom().getAID())) {
 			singleAtomListener.onError(e.getException());
 		}
 	}
 
 	private void processDeserializationFailure(DeserializationFailure e) {
-		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(e.getAtom().getAID());
+		List<SingleAtomListener> subscribers = removeDeleteOnEventListeners(e.getAtom().getAID());
 		if (subscribers != null) {
 			subscribers.forEach(subscriber -> subscriber.onError(e.getAtom().getAID(), e.getException()));
 		}
 
-		for (AtomStatusListener singleAtomListener : this.singleAtomObservers.getOrDefault(e.getAtom().getAID(), Collections.emptyList())) {
+		for (AtomStatusListener singleAtomListener : getAtomStatusListeners(e.getAtom().getAID())) {
 			singleAtomListener.onError(e.getException());
 		}
 	}
@@ -173,10 +178,7 @@ public class AtomsService {
 		} catch (MempoolRejectedException e) {
 			if (subscriber != null) {
 				AID atomId = aid.get();
-				this.deleteOnEventSingleAtomObservers.computeIfPresent(atomId, (id, subscribers) -> {
-					subscribers.remove(subscriber);
-					return subscribers;
-				});
+				removeDeleteOnEventListener(atomId, subscriber);
 				subscriber.onError(atomId, e);
 			}
 			throw new IllegalStateException(e);
@@ -185,22 +187,14 @@ public class AtomsService {
 
 	private void subscribeToSubmission(SingleAtomListener subscriber, ClientAtom atom) {
 		if (subscriber != null) {
-			this.deleteOnEventSingleAtomObservers.compute(atom.getAID(), (aid, oldSubscribers) -> {
-				List<SingleAtomListener> subscribers = oldSubscribers == null ? new ArrayList<>() : oldSubscribers;
-				subscribers.add(subscriber);
-				return subscribers;
-			});
+			addDeleteOnEventListener(atom.getAID(), subscriber);
 		}
 	}
 
 	public Disposable subscribeAtomStatusNotifications(AID aid, AtomStatusListener subscriber) {
-		this.singleAtomObservers.compute(aid, (hid, oldSubscribers) -> {
-			List<AtomStatusListener> subscribers = oldSubscribers == null ? new ArrayList<>() : oldSubscribers;
-			subscribers.add(subscriber);
-			return subscribers;
-		});
+		addAtomStatusListener(aid, subscriber);
 
-		return () -> this.singleAtomObservers.get(aid).remove(subscriber);
+		return () -> removeAtomStatusListener(aid, subscriber);
 	}
 
 	public Observable<ObservedAtomEvents> getAtomEvents(AtomQuery atomQuery) {
@@ -230,5 +224,60 @@ public class AtomsService {
 			return serialization.toJsonObject(apiAtom, DsonOutput.Output.API);
 		}
 		throw new RuntimeException("Atom not found");
+	}
+
+	private ImmutableList<SingleAtomListener> getDeleteOnEventListeners(AID aid) {
+		synchronized (this.deleteOnEventSingleAtomObserversLock) {
+			return ImmutableList.copyOf(this.deleteOnEventSingleAtomObservers.getOrDefault(aid, ImmutableList.of()));
+		}
+	}
+
+	private void addDeleteOnEventListener(AID aid, SingleAtomListener listener) {
+		synchronized (this.deleteOnEventSingleAtomObserversLock) {
+			this.deleteOnEventSingleAtomObservers.computeIfAbsent(aid, key -> Lists.newArrayList()).add(listener);
+		}
+	}
+
+	private List<SingleAtomListener> removeDeleteOnEventListeners(AID aid) {
+		synchronized (this.deleteOnEventSingleAtomObserversLock) {
+			// OK to just remove and return, as it is inaccessible anyway
+			return this.deleteOnEventSingleAtomObservers.remove(aid);
+		}
+	}
+
+	private void removeDeleteOnEventListener(AID aid, SingleAtomListener listener) {
+		synchronized (this.deleteOnEventSingleAtomObserversLock) {
+			List<SingleAtomListener> listeners = this.deleteOnEventSingleAtomObservers.get(aid);
+			if (listeners != null) {
+				listeners.remove(listener);
+				if (listeners.isEmpty()) {
+					this.deleteOnEventSingleAtomObservers.remove(aid);
+				}
+			}
+		}
+	}
+
+	private ImmutableList<AtomStatusListener> getAtomStatusListeners(AID aid) {
+		synchronized (this.singleAtomObserversLock) {
+			return ImmutableList.copyOf(this.singleAtomObservers.getOrDefault(aid, ImmutableList.of()));
+		}
+	}
+
+	private void addAtomStatusListener(AID aid, AtomStatusListener listener) {
+		synchronized (this.singleAtomObserversLock) {
+			this.singleAtomObservers.computeIfAbsent(aid, key -> Lists.newArrayList()).add(listener);
+		}
+	}
+
+	private void removeAtomStatusListener(AID aid, AtomStatusListener listener) {
+		synchronized (this.singleAtomObserversLock) {
+			List<AtomStatusListener> listeners = this.singleAtomObservers.get(aid);
+			if (listeners != null) {
+				listeners.remove(listener);
+				if (listeners.isEmpty()) {
+					this.singleAtomObservers.remove(aid);
+				}
+			}
+		}
 	}
 }
