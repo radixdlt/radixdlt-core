@@ -47,6 +47,7 @@ public interface SystemCounters {
 		BFT_VOTE_QUORUMS("bft.vote_quorums"),
 		BFT_SYNC_REQUESTS_SENT("bft.sync.requests_sent"),
 		BFT_SYNC_REQUEST_TIMEOUTS("bft.sync.request_timeouts"),
+		BFT_QUEUED_EVENTS("bft.queued_events"),
 
 		// Total elapsed time for database access, in microseconds
 		ELAPSED_BDB_ADDRESS_BOOK("elapsed.bdb.address_book"),

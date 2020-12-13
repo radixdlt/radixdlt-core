@@ -96,7 +96,8 @@ public final class ConsensusModule extends AbstractModule {
 		HashVerifier verifier,
 		EventDispatcher<FormedQC> formedQCEventDispatcher,
 		EventDispatcher<NoVote> noVoteEventDispatcher,
-		RemoteEventDispatcher<Vote> voteDispatcher
+		RemoteEventDispatcher<Vote> voteDispatcher,
+		SystemCounters systemCounters
 	) {
 		return (
 			self,
@@ -123,6 +124,7 @@ public final class ConsensusModule extends AbstractModule {
 					formedQCEventDispatcher.dispatch(formedQC);
 				})
 				.viewUpdate(viewUpdate)
+				.counters(systemCounters)
 				.bftSyncer(bftSyncer)
 				.validatorSet(validatorSet)
 				.build();

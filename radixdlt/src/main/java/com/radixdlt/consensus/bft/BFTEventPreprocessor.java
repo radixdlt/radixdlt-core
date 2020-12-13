@@ -28,6 +28,8 @@ import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
 
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -63,6 +65,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	//private final SyncQueues syncQueues;
 
 	private final Map<View, List<ConsensusEvent>> viewQueues = new HashMap<>();
+	private final SystemCounters systemCounters;
 	private ViewUpdate latestViewUpdate;
 
 	public BFTEventPreprocessor(
@@ -70,13 +73,15 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		BFTEventProcessor forwardTo,
 		BFTSyncer bftSyncer,
 		//SyncQueues syncQueues,
-		ViewUpdate initialViewUpdate
+		ViewUpdate initialViewUpdate,
+		SystemCounters systemCounters
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.bftSyncer = Objects.requireNonNull(bftSyncer);
 		//this.syncQueues = syncQueues;
 		this.forwardTo = forwardTo;
 		this.latestViewUpdate = Objects.requireNonNull(initialViewUpdate);
+		this.systemCounters = systemCounters;
 	}
 
 	// TODO: Cleanup
@@ -155,6 +160,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (!processVoteInternal(vote)) {
 			log.debug("Vote: Queuing {}, waiting for Sync", vote);
 			events.add(vote);
+			systemCounters.increment(CounterType.BFT_QUEUED_EVENTS);
 		}
 	}
 
@@ -164,6 +170,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (!processViewTimeoutInternal(viewTimeout)) {
 			log.debug("ViewTimeout: Queuing {}, waiting for Sync", viewTimeout);
 			events.add(viewTimeout);
+			systemCounters.increment(CounterType.BFT_QUEUED_EVENTS);
 		}
 	}
 
@@ -173,6 +180,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (!processProposalInternal(proposal)) {
 			log.debug("Proposal: Queuing {}, waiting for Sync", proposal);
 			events.add(proposal);
+			systemCounters.increment(CounterType.BFT_QUEUED_EVENTS);
 		}
 	}
 
