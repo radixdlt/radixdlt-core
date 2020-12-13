@@ -311,12 +311,10 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 		this.bftEventProcessor.start();
 
 		// Execute any queued up consensus events
-		/*
 		final List<ConsensusEvent> queuedEventsForEpoch = queuedEvents.getOrDefault(epochChange.getEpoch(), Collections.emptyList());
 		View highView = queuedEventsForEpoch.stream().map(ConsensusEvent::getView).max(Comparator.naturalOrder()).orElse(View.genesis());
 		queuedEventsForEpoch.stream().filter(e -> e.getView().equals(highView))
 			.forEach(this::processConsensusEventInternal);
-		 */
 
 		queuedEvents.remove(epochChange.getEpoch());
 	}

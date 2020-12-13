@@ -65,7 +65,9 @@ public class PersistenceModule extends AbstractModule {
 	) {
 		return update -> {
 			systemCounters.increment(CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
+			/*
 			persistentVertexStore.save(update.getVertexStoreState());
+			 */
 		};
 	}
 
@@ -77,7 +79,9 @@ public class PersistenceModule extends AbstractModule {
 	) {
 		return update -> {
 			systemCounters.increment(CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
+			/*
 			persistentVertexStore.save(update.getVertexStoreState());
+			 */
 		};
 	}
 }
