@@ -96,7 +96,8 @@ public final class ConsensusModule extends AbstractModule {
 		HashVerifier verifier,
 		EventDispatcher<FormedQC> formedQCEventDispatcher,
 		EventDispatcher<NoVote> noVoteEventDispatcher,
-		RemoteEventDispatcher<Vote> voteDispatcher
+		RemoteEventDispatcher<Vote> voteDispatcher,
+		SystemCounters systemCounters
 	) {
 		return (
 			self,
@@ -123,6 +124,7 @@ public final class ConsensusModule extends AbstractModule {
 					formedQCEventDispatcher.dispatch(formedQC);
 				})
 				.viewUpdate(viewUpdate)
+				.counters(systemCounters)
 				.bftSyncer(bftSyncer)
 				.validatorSet(validatorSet)
 				.build();
@@ -225,6 +227,7 @@ public final class ConsensusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private BFTSync bftSync(
+		@Self BFTNode self,
 		VertexStore vertexStore,
 		PacemakerReducer pacemakerReducer,
 		SyncVerticesRequestSender requestSender,
@@ -236,7 +239,9 @@ public final class ConsensusModule extends AbstractModule {
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis
 	) {
 		return new BFTSync(
-			vertexStore, pacemakerReducer,
+			self,
+			vertexStore,
+			pacemakerReducer,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
 			(node, request)  -> {
 				counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);
@@ -246,7 +251,8 @@ public final class ConsensusModule extends AbstractModule {
 			timeoutDispatcher,
 			ledgerLastProof,
 			random,
-			bftSyncPatienceMillis
+			bftSyncPatienceMillis,
+			counters
 		);
 	}
 

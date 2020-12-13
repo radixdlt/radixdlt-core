@@ -30,6 +30,7 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
@@ -70,7 +71,8 @@ public class EpochsLocalSyncServiceProcessorTest {
 			this.initialHeader,
 			this.localSyncFactory,
 			this.requestDispatcher,
-			this.syncedEpochSender
+			this.syncedEpochSender,
+			mock(SystemCounters.class)
 		);
 	}
 

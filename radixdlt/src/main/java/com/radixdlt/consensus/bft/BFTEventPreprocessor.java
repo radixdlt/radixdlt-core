@@ -28,11 +28,15 @@ import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
 
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import org.apache.logging.log4j.LogManager;
@@ -56,23 +60,28 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private final BFTNode self;
 	private final BFTEventProcessor forwardTo;
 	private final BFTSyncer bftSyncer;
-	private final SyncQueues syncQueues;
+	private final Set<ConsensusEvent> events = new HashSet<>();
+
+	//private final SyncQueues syncQueues;
 
 	private final Map<View, List<ConsensusEvent>> viewQueues = new HashMap<>();
+	private final SystemCounters systemCounters;
 	private ViewUpdate latestViewUpdate;
 
 	public BFTEventPreprocessor(
 		BFTNode self,
 		BFTEventProcessor forwardTo,
 		BFTSyncer bftSyncer,
-		SyncQueues syncQueues,
-		ViewUpdate initialViewUpdate
+		//SyncQueues syncQueues,
+		ViewUpdate initialViewUpdate,
+		SystemCounters systemCounters
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.bftSyncer = Objects.requireNonNull(bftSyncer);
-		this.syncQueues = syncQueues;
+		//this.syncQueues = syncQueues;
 		this.forwardTo = forwardTo;
 		this.latestViewUpdate = Objects.requireNonNull(initialViewUpdate);
+		this.systemCounters = systemCounters;
 	}
 
 	// TODO: Cleanup
@@ -100,15 +109,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 					.forEach(this::processViewCachedEvent);
 			viewQueues.keySet().removeIf(v -> v.lte(viewUpdate.getCurrentView()));
 
-			log.debug("ViewUpdate: Clearing Queues: {}", syncQueues);
-			for (SyncQueue queue : syncQueues.getQueues()) {
-				if (clearAndExecute(queue, viewUpdate.getCurrentView().previous())) {
-					queue.pop();
-					while (peekAndExecute(queue, null)) {
-						queue.pop();
-					}
-				}
-			}
+			events.removeIf(e -> e.getView().lt(viewUpdate.getCurrentView()));
 		}
 	}
 
@@ -131,14 +132,12 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	public void processBFTUpdate(BFTInsertUpdate update) {
 		HashCode vertexId = update.getInserted().getId();
 		log.trace("LOCAL_SYNC: {}", vertexId);
-		for (SyncQueue queue : syncQueues.getQueues()) {
-			if (peekAndExecute(queue, vertexId)) {
-				queue.pop();
-				while (peekAndExecute(queue, null)) {
-					queue.pop();
-				}
-			}
-		}
+
+		events.stream()
+			.filter(e -> e.highQC().highestQC().getProposed().getVertexId().equals(vertexId))
+			.forEach(this::processQueuedConsensusEvent);
+
+		events.removeIf(e -> e.highQC().highestQC().getProposed().getVertexId().equals(vertexId));
 
 		forwardTo.processBFTUpdate(update);
 	}
@@ -147,41 +146,41 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	public void processBFTRebuildUpdate(BFTRebuildUpdate rebuildUpdate) {
 		rebuildUpdate.getVertexStoreState().getVertices().forEach(v -> {
 			HashCode vertexId = v.getId();
-			for (SyncQueue queue : syncQueues.getQueues()) {
-				if (peekAndExecute(queue, vertexId)) {
-					queue.pop();
-					while (peekAndExecute(queue, null)) {
-						queue.pop();
-					}
-				}
-			}
+			events.stream()
+				.filter(e -> e.highQC().highestQC().getProposed().getVertexId().equals(vertexId))
+				.forEach(this::processQueuedConsensusEvent);
+
+			events.removeIf(e -> e.highQC().highestQC().getProposed().getVertexId().equals(vertexId));
 		});
 	}
 
 	@Override
 	public void processVote(Vote vote) {
 		log.trace("Vote: PreProcessing {}", vote);
-		if (syncQueues.isEmptyElseAdd(vote) && !processVoteInternal(vote)) {
+		if (!processVoteInternal(vote)) {
 			log.debug("Vote: Queuing {}, waiting for Sync", vote);
-			syncQueues.add(vote);
+			events.add(vote);
+			systemCounters.increment(CounterType.BFT_QUEUED_EVENTS);
 		}
 	}
 
 	@Override
 	public void processViewTimeout(ViewTimeout viewTimeout) {
 		log.trace("ViewTimeout: PreProcessing {}", viewTimeout);
-		if (syncQueues.isEmptyElseAdd(viewTimeout) && !processViewTimeoutInternal(viewTimeout)) {
+		if (!processViewTimeoutInternal(viewTimeout)) {
 			log.debug("ViewTimeout: Queuing {}, waiting for Sync", viewTimeout);
-			syncQueues.add(viewTimeout);
+			events.add(viewTimeout);
+			systemCounters.increment(CounterType.BFT_QUEUED_EVENTS);
 		}
 	}
 
 	@Override
 	public void processProposal(Proposal proposal) {
 		log.trace("Proposal: PreProcessing {}", proposal);
-		if (syncQueues.isEmptyElseAdd(proposal) && !processProposalInternal(proposal)) {
+		if (!processProposalInternal(proposal)) {
 			log.debug("Proposal: Queuing {}, waiting for Sync", proposal);
-			syncQueues.add(proposal);
+			events.add(proposal);
+			systemCounters.increment(CounterType.BFT_QUEUED_EVENTS);
 		}
 	}
 
