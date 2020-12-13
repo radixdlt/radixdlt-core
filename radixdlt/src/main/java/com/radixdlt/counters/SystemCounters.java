@@ -64,6 +64,10 @@ public interface SystemCounters {
 		LEDGER_PROCESSED("ledger.processed"),
 		LEDGER_STATE_VERSION("ledger.state_version"),
 
+		LEDGER_SYNC_COMMANDS_PROCESSED("ledger.sync_commands_processed"),
+		LEDGER_BFT_COMMANDS_PROCESSED("ledger.bft_commands_processed"),
+
+		SYNC_LAST_READ_MILLIS("sync.last_read_millis"),
 		SYNC_INVALID_COMMANDS_RECEIVED("sync.invalid_commands_received"),
 		SYNC_PROCESSED("sync.processed"),
 		SYNC_TARGET_STATE_VERSION("sync.target_state_version"),
