@@ -382,8 +382,6 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 	}
 
 	private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
-		this.counters.increment(CounterType.BFT_CONSENSUS_EVENTS);
-
 		if (consensusEvent instanceof ViewTimeout) {
 			bftEventProcessor.processViewTimeout((ViewTimeout) consensusEvent);
 		} else if (consensusEvent instanceof Proposal) {
@@ -396,6 +394,8 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 	}
 
 	public void processConsensusEvent(ConsensusEvent consensusEvent) {
+		this.counters.increment(CounterType.BFT_CONSENSUS_EVENTS);
+
 		if (consensusEvent.getEpoch() > this.currentEpoch()) {
 			log.debug("{}: CONSENSUS_EVENT: Received higher epoch event: {} current epoch: {}",
 				this.self::getSimpleName, () -> consensusEvent, this::currentEpoch

@@ -21,6 +21,8 @@ import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
@@ -48,6 +50,7 @@ public class EpochsLocalSyncServiceProcessor {
 	private final SyncedEpochSender syncedEpochSender;
 	private final RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher;
 	private final TreeMap<Long, List<LocalSyncRequest>> outsideOfCurrentEpochRequests = new TreeMap<>();
+	private final SystemCounters systemCounters;
 
 	private EpochChange currentEpoch;
 	private VerifiedLedgerHeaderAndProof currentHeader;
@@ -60,11 +63,13 @@ public class EpochsLocalSyncServiceProcessor {
 		@LastProof VerifiedLedgerHeaderAndProof initialHeader,
 		Function<EpochChange, LocalSyncServiceAccumulatorProcessor> localSyncFactory,
 		RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher,
-		SyncedEpochSender syncedEpochSender
+		SyncedEpochSender syncedEpochSender,
+		SystemCounters systemCounters
 	) {
 		this.currentEpoch = initialEpoch;
 		this.currentHeader = initialHeader;
 		this.localSyncServiceProcessor = initialProcessor;
+		this.systemCounters = systemCounters;
 
 		this.localSyncFactory = localSyncFactory;
 		this.syncedEpochSender = syncedEpochSender;
@@ -87,6 +92,8 @@ public class EpochsLocalSyncServiceProcessor {
 					log.info("Epoch updated sending further sync requests to {}", request.getTargetNodes().get(0));
 					requestDispatcher.dispatch(request.getTargetNodes().get(0), currentEpoch.getProof().toDto());
 				});
+			long highestTarget = outsideOfCurrentEpochRequests.keySet().stream().mapToLong(l -> l).max().orElse(0);
+			systemCounters.set(CounterType.SYNC_EPOCHS_TARGET_CURRENT_DIFF, highestTarget - this.currentEpoch.getEpoch());
 		} else {
 			this.currentHeader = ledgerUpdate.getTail();
 			this.localSyncServiceProcessor.processLedgerUpdate(ledgerUpdate);
@@ -105,6 +112,9 @@ public class EpochsLocalSyncServiceProcessor {
 		final long targetEpoch = request.getTarget().getEpoch();
 		if (targetEpoch > currentEpoch.getEpoch()) {
 			log.warn("Request {} is a different epoch from current {} sending epoch sync", request, currentEpoch.getEpoch());
+
+			long highestTarget = outsideOfCurrentEpochRequests.keySet().stream().mapToLong(l -> l).max().orElse(0);
+			systemCounters.set(CounterType.SYNC_EPOCHS_TARGET_CURRENT_DIFF, highestTarget - this.currentEpoch.getEpoch());
 
 			outsideOfCurrentEpochRequests.computeIfAbsent(targetEpoch, epoch -> Lists.newArrayList()).add(request);
 			requestDispatcher.dispatch(request.getTargetNodes().get(0), currentEpoch.getProof().toDto());

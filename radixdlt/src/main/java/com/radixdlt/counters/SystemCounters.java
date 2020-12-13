@@ -67,6 +67,7 @@ public interface SystemCounters {
 		SYNC_PROCESSED("sync.processed"),
 		SYNC_TARGET_STATE_VERSION("sync.target_state_version"),
 		SYNC_TARGET_CURRENT_DIFF("sync.target_current_diff"),
+		SYNC_EPOCHS_TARGET_CURRENT_DIFF("sync.epochs_target_current_diff"),
 
 		MEMPOOL_COUNT("mempool.count"),
 		MEMPOOL_MAXCOUNT("mempool.maxcount"),
