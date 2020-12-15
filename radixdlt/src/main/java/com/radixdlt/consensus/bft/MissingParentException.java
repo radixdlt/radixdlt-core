@@ -25,7 +25,7 @@ import java.util.Objects;
  * it's parent is missing from the current store.
  */
 public class MissingParentException extends RuntimeException {
-	MissingParentException(HashCode parentId) {
+	public MissingParentException(HashCode parentId) {
 		super("Parent Vertex missing: " + Objects.requireNonNull(parentId));
 	}
 }

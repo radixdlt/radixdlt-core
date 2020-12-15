@@ -26,6 +26,7 @@ import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.MissingParentException;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -52,11 +53,7 @@ import org.mockito.ArgumentCaptor;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class PacemakerTest {
 
@@ -187,5 +184,34 @@ public class PacemakerTest {
 		this.pacemaker.processLocalTimeout(ScheduledLocalTimeout.create(
 			ViewUpdate.create(View.of(1), mock(HighQC.class), mock(BFTNode.class), mock(BFTNode.class)), 0L));
 		verifyNoMoreInteractions(this.safetyRules);
+	}
+
+	@Test
+	public void when_missing_parent_exception__then_pacemaker_can_recover() {
+		HighQC viewUpdateHighQc = mock(HighQC.class);
+		QuorumCertificate committedQc = mock(QuorumCertificate.class);
+		QuorumCertificate highestQc = mock(QuorumCertificate.class);
+		when(viewUpdateHighQc.highestCommittedQC()).thenReturn(committedQc);
+		when(viewUpdateHighQc.highestQC()).thenReturn(highestQc);
+		when(committedQc.getView()).thenReturn(View.of(0));
+		ViewUpdate viewUpdate = ViewUpdate.create(View.of(1), viewUpdateHighQc, mock(BFTNode.class), mock(BFTNode.class));
+		this.pacemaker.processViewUpdate(viewUpdate);
+
+		Vote emptyVote = mock(Vote.class);
+		ImmutableSet<BFTNode> validators = rmock(ImmutableSet.class);
+		when(this.safetyRules.getLastVote(any())).thenReturn(Optional.empty());
+		when(this.safetyRules.createVote(any(), any(), anyLong(), any())).thenReturn(emptyVote);
+		when(this.safetyRules.timeoutVote(emptyVote)).thenReturn(mock(Vote.class));
+		when(this.validatorSet.nodes()).thenReturn(validators);
+
+		when(this.vertexStore.getPreparedVertex(any())).thenReturn(Optional.empty());
+		doThrow(new MissingParentException(mock(HashCode.class))).when(this.vertexStore).insertVertex(any());
+
+		this.pacemaker.processLocalTimeout(ScheduledLocalTimeout.create(
+				ViewUpdate.create(View.of(1), mock(HighQC.class), mock(BFTNode.class), mock(BFTNode.class)), 0L));
+
+		verify(this.vertexStore, times(1)).getPreparedVertex(any());
+		verify(this.vertexStore, times(1)).insertVertex(any());
+		verifyNoMoreInteractions(this.vertexStore);
 	}
 }
