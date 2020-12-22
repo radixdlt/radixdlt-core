@@ -29,6 +29,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
@@ -79,7 +80,7 @@ public final class MessageCentralBFTNetwork implements ProposalBroadcaster, BFTE
 			MessageListener<ConsensusEventMessage> listener = (src, msg) -> emitter.onNext(msg.getConsensusMessage());
 			this.messageCentral.addListener(ConsensusEventMessage.class, listener);
 			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
-		}).mergeWith(localMessages.observeOn(Schedulers.io()));
+		}).mergeWith(localMessages.observeOn(Schedulers.io())).delay(100, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
