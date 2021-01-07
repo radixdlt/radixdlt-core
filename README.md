@@ -1,3 +1,9 @@
+# IMPORTANT
+This repository has been archived as part of our move to a monorepo.
+
+- [Monorepo is here](https://github.com/radixdlt/radixdlt)
+- The code for this repo is available in the `radixdlt-core` subdirectory of the monorepo.
+
 # radixdlt-core
 
 radixdlt-core is Radix's core consensus and networking module for the [Radix](https://www.radixdlt.com)
