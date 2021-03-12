@@ -360,3 +360,15 @@ task gendoc(type: NodeTask, dependsOn: genmarkdown) {
 task gendocanddeb4docker(dependsOn: [gendoc, deb4docker]) {
     deb4docker.mustRunAfter(gendoc);
 }
+
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+task shadowJarGenerateUniverse(type: ShadowJar) {
+    archiveName = "radixdlt-generate-universe-$baseName-$version.$extension"
+    manifest {
+        attributes 'Main-Class': 'org.radix.GenerateUniverses'
+    }
+}
+
+artifacts {
+    archives shadowJarGenerateUniverse
+}
